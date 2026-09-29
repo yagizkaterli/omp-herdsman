@@ -28,7 +28,7 @@ let candidateReadOpenCount = 0;
 let candidateReadMissingOnSecondOpen = false;
 let candidateReadIsFile = true;
 const syntheticCanonicalPaths = new Map<string, string>();
-mock.module("@earendil-works/pi-coding-agent", {
+mock.module("@oh-my-pi/pi-coding-agent", {
   namedExports: {
     getAgentDir: () => process.env.PI_CODING_AGENT_DIR ?? tmpdir(),
   },
@@ -227,7 +227,7 @@ test("projects lifecycle and assignment state into control states", () => {
 });
 
 test("rejects invalid file content", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-files-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-files-"));
   writeFileSync(join(cwd, "bad.bin"), Buffer.from([0xff]));
   assert.throws(
     () => snapshotTextFiles(["bad.bin"], cwd, "assign"),
@@ -236,7 +236,7 @@ test("rejects invalid file content", () => {
 });
 
 test("snapshots strict text once and deduplicates canonical paths", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-snapshot-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-snapshot-"));
   writeFileSync(join(cwd, "source.txt"), "café");
   const snapshots = snapshotTextFiles(
     ["source.txt", "./nested/../source.txt"],
@@ -257,7 +257,7 @@ test("snapshots strict text once and deduplicates canonical paths", () => {
 });
 
 test("reads the canonical target for symlinked snapshots", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-snapshot-link-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-snapshot-link-"));
   const target = join(cwd, "target.txt");
   const link = join(cwd, "link.txt");
   writeFileSync(target, "canonical bytes");
@@ -276,7 +276,7 @@ test("reads the canonical target for symlinked snapshots", () => {
 });
 
 test("does not read a replacement with a different file identity", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-snapshot-identity-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-snapshot-identity-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "validated");
   const initial = realFs.statSync(path);
@@ -303,7 +303,7 @@ test("does not read a replacement with a different file identity", () => {
 });
 
 test("rejects a non-regular replacement without reading it", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-snapshot-replaced-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-snapshot-replaced-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "candidate");
   candidateReadPath = realpathSync(path);
@@ -327,7 +327,7 @@ test("rejects a non-regular replacement without reading it", () => {
 });
 
 test("snapshots reject NUL, invalid UTF-8, and byte limits", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-snapshot-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-snapshot-"));
   writeFileSync(join(cwd, "nul.txt"), Buffer.from("a\0b"));
   writeFileSync(join(cwd, "utf8.txt"), Buffer.from([0xff]));
   writeFileSync(join(cwd, "at-limit.txt"), "123");
@@ -351,7 +351,7 @@ test("snapshots reject NUL, invalid UTF-8, and byte limits", () => {
 });
 
 test("prepares mixed message files as complete text or references", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-"));
   writeFileSync(join(cwd, "note"), "café");
   writeFileSync(join(cwd, "binary"), Buffer.from([0, 1, 2]));
   writeFileSync(join(cwd, "empty"), "");
@@ -396,7 +396,7 @@ test("resolves result references through shared message file preparation", () =>
     const prepared = prepareMessageInput(
       "Inspect the result",
       [resultRef(requestId), path],
-      mkdtempSync(join(tmpdir(), "pi-herdsman-result-reference-")),
+      mkdtempSync(join(tmpdir(), "omp-herdsman-result-reference-")),
       "assign",
       "Task",
       { inlineLimitBytes: 1 },
@@ -413,7 +413,7 @@ test("resolves result references through shared message file preparation", () =>
     const embedded = prepareMessageInput(
       "Inspect the result again",
       [resultRef(requestId)],
-      mkdtempSync(join(tmpdir(), "pi-herdsman-result-reference-nested-")),
+      mkdtempSync(join(tmpdir(), "omp-herdsman-result-reference-nested-")),
       "assign",
       "Task",
     );
@@ -425,7 +425,7 @@ test("resolves result references through shared message file preparation", () =>
     const forwarded = prepareMessageInput(
       "Inspect the result a third time",
       [forwardedRef!],
-      mkdtempSync(join(tmpdir(), "pi-herdsman-result-reference-forwarded-")),
+      mkdtempSync(join(tmpdir(), "omp-herdsman-result-reference-forwarded-")),
       "assign",
       "Task",
     );
@@ -447,7 +447,7 @@ test("missing result ref returns the actionable result-ref error", () => {
       prepareMessageInput(
         "Inspect the missing result",
         [input],
-        mkdtempSync(join(tmpdir(), "pi-herdsman-missing-result-reference-")),
+        mkdtempSync(join(tmpdir(), "omp-herdsman-missing-result-reference-")),
         "assign",
         "Task",
       ),
@@ -473,7 +473,7 @@ test("missing result ref during the second read returns the actionable result-re
         prepareMessageInput(
           "Inspect the result",
           [input],
-          mkdtempSync(join(tmpdir(), "pi-herdsman-result-reference-read-")),
+          mkdtempSync(join(tmpdir(), "omp-herdsman-result-reference-read-")),
           "assign",
           "Task",
         ),
@@ -491,7 +491,7 @@ test("missing result ref during the second read returns the actionable result-re
 });
 
 test("escapes canonical paths in message structure", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-path-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-path-"));
   const path = join(cwd, "evidence-reference");
   const inlinePath = join(cwd, "inline-reference");
   writeFileSync(path, Buffer.from([0]));
@@ -545,7 +545,7 @@ test("escapes canonical paths in message structure", () => {
 });
 
 test("rejects a non-regular candidate descriptor without reading it", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-replaced-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-replaced-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "candidate");
   candidateReadPath = realpathSync(path);
@@ -574,7 +574,7 @@ test("rejects a non-regular candidate descriptor without reading it", () => {
 });
 
 test("keeps a reference when the candidate descriptor has a different identity", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-identity-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-identity-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "AAAA");
   const initial = realFs.statSync(path);
@@ -611,7 +611,7 @@ test("keeps a reference when the candidate descriptor has a different identity",
 });
 
 test("keeps a candidate reference when its descriptor no longer fits", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-resize-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-resize-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "candidate");
   candidateReadPath = realpathSync(path);
@@ -642,7 +642,7 @@ test("keeps a candidate reference when its descriptor no longer fits", () => {
 });
 
 test("message files keep invalid text and NUL content as references", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-"));
   writeFileSync(join(cwd, "invalid"), Buffer.from([0xff]));
   writeFileSync(join(cwd, "nul"), Buffer.from("a\0b"));
   const prepared = prepareMessageInput(
@@ -658,7 +658,7 @@ test("message files keep invalid text and NUL content as references", () => {
 });
 
 test("message preparation reserves references and never partially inlines", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-pressure-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-pressure-"));
   writeFileSync(join(cwd, "early"), "e".repeat(525_000));
   writeFileSync(join(cwd, "late"), "l".repeat(525_000));
   const prepared = prepareMessageInput(
@@ -674,7 +674,7 @@ test("message preparation reserves references and never partially inlines", () =
 });
 
 test("embedded message text is a submission-time snapshot", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-snapshot-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-snapshot-"));
   const path = join(cwd, "note");
   writeFileSync(path, "before");
   const prepared = prepareMessageInput(
@@ -690,7 +690,7 @@ test("embedded message text is a submission-time snapshot", () => {
 });
 
 test("message files reject missing, broken, and non-regular paths", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-invalid-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-invalid-"));
   symlinkSync(join(cwd, "missing"), join(cwd, "broken"));
   for (const file of ["missing", "broken", "."]) {
     assert.throws(
@@ -701,7 +701,7 @@ test("message files reject missing, broken, and non-regular paths", () => {
 });
 
 test("rejects non-regular message files before opening them", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-directory-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-directory-"));
   openCallCount = 0;
   assert.throws(
     () => prepareMessageInput("q", ["."], cwd, "assign", "Task"),
@@ -718,7 +718,7 @@ test("message preparation keeps no-file messages unchanged", () => {
 });
 
 test("message preparation rejects whitespace semantic messages before headings", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-empty-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-empty-"));
   writeFileSync(join(cwd, "evidence"), "evidence");
   for (const [operation, heading] of [
     ["assign", "Task"],
@@ -733,7 +733,7 @@ test("message preparation rejects whitespace semantic messages before headings",
 });
 
 test("message preparation does not read candidates that cannot fit", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-read-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-read-"));
   writeFileSync(join(cwd, "early"), "e".repeat(600_000));
   writeFileSync(join(cwd, "late"), "l".repeat(600_000));
   messageReadCount = 0;
@@ -755,7 +755,7 @@ test("message preparation does not read candidates that cannot fit", () => {
 });
 
 test("message preparation uses the durable record fit predicate before reading", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-record-limit-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-record-limit-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "x".repeat(100));
   let checks = 0;
@@ -784,7 +784,7 @@ test("message preparation uses the durable record fit predicate before reading",
 });
 
 test("message preparation embeds valid text when the lower-bound probe fits", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-lower-bound-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-lower-bound-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "é".repeat(100));
   messageReadCount = 0;
@@ -810,7 +810,7 @@ test("message preparation embeds valid text when the lower-bound probe fits", ()
 });
 
 test("message preparation uses exact serialized envelope boundaries", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-exact-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-exact-"));
   const path = join(cwd, "quotes");
   writeFileSync(path, '"\\\\é\n');
   const serialize = (text: string) =>
@@ -830,7 +830,7 @@ test("message preparation uses exact serialized envelope boundaries", () => {
 });
 
 test("message preparation rejects a candidate read failure", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-message-read-failure-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-message-read-failure-"));
   const path = join(cwd, "candidate");
   writeFileSync(path, "candidate");
   messageReadFailurePath = realpathSync(path);

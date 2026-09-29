@@ -108,7 +108,7 @@ export interface ResultRecord {
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PREFIX = "__PI_HERDSMAN_AGENT_V4__:";
+const PREFIX = "__OMP_HERDSMAN_AGENT_V4__:";
 /** Fixed protocol safety ceiling; configuration only limits new submissions. */
 export const MAILBOX_PROTOCOL_LIMIT_BYTES = 1024 * 1024;
 export function mailboxRecordBytes(record: RequestRecord | AskRecord): number {

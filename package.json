@@ -1,22 +1,22 @@
 {
-  "name": "pi-herdsman",
-  "version": "0.18.0",
+  "name": "omp-herdsman",
+  "version": "0.1.0-herakles.0",
   "type": "module",
-  "description": "Asynchronous Pi subagents and agent fleet orchestration for parallel coding agents with nested delegation, background work, and supervision in herdr.",
+  "description": "Asynchronous OMP (oh-my-pi) subagents and agent fleet orchestration for parallel coding agents with nested delegation in herdr. Port of pi-herdsman.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/boadij/pi-herdsman.git"
+    "url": "git+https://github.com/yagizkaterli/omp-herdsman.git"
   },
   "bugs": {
-    "url": "https://github.com/boadij/pi-herdsman/issues"
+    "url": "https://github.com/yagizkaterli/omp-herdsman/issues"
   },
-  "homepage": "https://github.com/boadij/pi-herdsman#readme",
+  "homepage": "https://github.com/yagizkaterli/omp-herdsman#readme",
   "keywords": [
     "pi-package",
     "pi",
     "pi-coding-agent",
-    "pi-extension",
+    "omp-extension",
     "subagent",
     "subagents",
     "agents",
@@ -35,7 +35,9 @@
     "delegation",
     "supervision",
     "herdr",
-    "pi-herdsman"
+    "omp-herdsman",
+    "omp",
+    "oh-my-pi"
   ],
   "pi": {
     "extensions": [
@@ -43,22 +45,7 @@
     ],
     "skills": [
       "."
-    ],
-    "image": "https://raw.githubusercontent.com/boadij/pi-herdsman/main/docs/assets/thumbnail.webp"
-  },
-  "piHerdsman": {
-    "runtime": {
-      "pi": "0.87.1",
-      "herdr": {
-        "version": "0.9.1",
-        "sha256": {
-          "linux-x86_64": "2a02fed16beb651ef006e1d43f048f652ca4dc58ad053cd2d44450563d5c54b7",
-          "linux-aarch64": "f4ccf4de745f2cb9a39a983e9ba3703dad50ec2a58dea83026ceab721bbd8d9e",
-          "macos-x86_64": "053be0639935fe54ab5efbdb46651054e4f6a753a5b43153c88bd6912bce1e94",
-          "macos-aarch64": "5fc7a7e7adfaca56fa80aa89dcb025693357268dab8285b9ce2d08a2313c89de"
-        }
-      }
-    }
+    ]
   },
   "scripts": {
     "test": "node --experimental-test-module-mocks --import=./scripts/test-env.mjs --test --test-timeout=10000",
@@ -71,15 +58,15 @@
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": ">=0.87.0 <0.88.0",
-    "@earendil-works/pi-coding-agent": ">=0.87.0 <0.88.0",
-    "@earendil-works/pi-tui": ">=0.87.0 <0.88.0",
+    "@oh-my-pi/pi-ai": ">=18.0.0",
+    "@oh-my-pi/pi-coding-agent": ">=18.0.0",
+    "@oh-my-pi/pi-tui": ">=18.0.0",
     "typebox": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "^0.87.0",
-    "@earendil-works/pi-coding-agent": "^0.87.0",
-    "@earendil-works/pi-tui": "^0.87.0",
+    "@oh-my-pi/pi-ai": "^18.4.2",
+    "@oh-my-pi/pi-coding-agent": "^18.4.2",
+    "@oh-my-pi/pi-tui": "^18.4.2",
     "esbuild": "^0.28.2",
     "typebox": "^1.3.7"
   },
@@ -95,5 +82,27 @@
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
+  },
+  "omp": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "skills": [
+      "."
+    ]
+  },
+  "ompHerdsman": {
+    "runtime": {
+      "omp": "18.4.2",
+      "herdr": {
+        "version": "0.9.1",
+        "sha256": {
+          "linux-x86_64": "2a02fed16beb651ef006e1d43f048f652ca4dc58ad053cd2d44450563d5c54b7",
+          "linux-aarch64": "f4ccf4de745f2cb9a39a983e9ba3703dad50ec2a58dea83026ceab721bbd8d9e",
+          "macos-x86_64": "053be0639935fe54ab5efbdb46651054e4f6a753a5b43153c88bd6912bce1e94",
+          "macos-aarch64": "5fc7a7e7adfaca56fa80aa89dcb025693357268dab8285b9ce2d08a2313c89de"
+        }
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { discoverAndLoadExtensions } from "@earendil-works/pi-coding-agent";
+import { discoverAndLoadExtensions } from "@oh-my-pi/pi-coding-agent";
 
 const root = process.cwd();
 const normalize = (path) => path.replace(/^package\//u, "");
@@ -88,7 +88,7 @@ for (const entry of files) {
 
 if (process.exitCode) process.exit(process.exitCode);
 
-const isolated = mkdtempSync(resolve(tmpdir(), "pi-herdsman-package-audit-"));
+const isolated = mkdtempSync(resolve(tmpdir(), "omp-herdsman-package-audit-"));
 
 try {
   const { extensions, errors } = await discoverAndLoadExtensions(

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "@oh-my-pi/pi-coding-agent";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { agentMailboxPath } from "./mailbox.ts";
@@ -14,7 +14,7 @@ import {
 } from "./storage.ts";
 
 test("recoverable Herdsman state lives under Pi agent data", () => {
-  const root = join(getAgentDir(), "pi-herdsman");
+  const root = join(getAgentDir(), "omp-herdsman");
   assert.equal(herdsmanDataRoot(), root);
   assert.equal(herdsmanConfigPath(), join(root, "config.json"));
   assert.equal(

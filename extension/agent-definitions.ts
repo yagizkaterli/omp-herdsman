@@ -17,7 +17,7 @@ import {
   getAgentDir,
   loadProjectContextFiles,
   parseFrontmatter as parsePiFrontmatter,
-} from "@earendil-works/pi-coding-agent";
+} from "@oh-my-pi/pi-coding-agent";
 import { snapshotTextFiles } from "./core.ts";
 import { herdsmanTempRoot } from "./storage.ts";
 

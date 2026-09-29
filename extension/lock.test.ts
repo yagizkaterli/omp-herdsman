@@ -18,7 +18,7 @@ import {
 } from "./lock.ts";
 
 function temporaryPath(): string {
-  return join(mkdtempSync(join(tmpdir(), "pi-herdsman-lock-")), "lock");
+  return join(mkdtempSync(join(tmpdir(), "omp-herdsman-lock-")), "lock");
 }
 
 test("claim wrapper publishes a complete claim and releases exactly", () => {

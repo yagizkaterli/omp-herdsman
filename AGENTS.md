@@ -127,3 +127,4 @@ documentation.
 ## Validation
 
 - Follow the detailed validation order in [Development validation](docs/development/validation.md).
+OMP-HERDSMAN: build with npm run build; dogfood under herdr + omp --model xai-oauth/grok-4.5

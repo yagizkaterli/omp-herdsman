@@ -73,7 +73,7 @@ const ownershipResult = (
   options: { path?: string; label?: string; definition?: string } = {},
 ) => ({
   type: "custom_message",
-  customType: "pi-herdsman-agent-result",
+  customType: "omp-herdsman-agent-result",
   content: "",
   display: true,
   details: {
@@ -91,7 +91,7 @@ const ownershipResult = (
 test("project agent discovery is gated by Pi project trust", async () => {
   setLeadEnvironment();
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-project-gate-"),
+    join(tmpdir(), "omp-herdsman-project-gate-"),
   );
   let pi: ReturnType<typeof fakePi> | undefined;
   try {
@@ -170,7 +170,7 @@ test("semantic result refs attach persisted output and preserve canonical file r
   realFs.writeFileSync(resultFile, resultText, "utf8");
   const entries: unknown[] = [
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: {
         agentLabel: "implementation",
         resultIndex: 1,
@@ -228,7 +228,7 @@ test("semantic result refs resolve only on the active branch", async () => {
   setLeadEnvironment();
   const requestId = randomUUID();
   const resultEntry = {
-    customType: "pi-herdsman-agent-result",
+    customType: "omp-herdsman-agent-result",
     details: {
       agentLabel: "implementation",
       resultIndex: 2,
@@ -288,7 +288,7 @@ test("conflicting duplicate result mappings fail closed", async () => {
   const secondRequestId = randomUUID();
   const entries: unknown[] = [
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: {
         agentLabel: "implementation",
         resultIndex: 1,
@@ -298,7 +298,7 @@ test("conflicting duplicate result mappings fail closed", async () => {
       },
     },
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: {
         agentLabel: "implementation",
         resultIndex: 1,
@@ -335,7 +335,7 @@ test("conflicting duplicate result mappings fail closed", async () => {
 test("managed agent validates project definitions before publishing state", async () => {
   const mailbox = setAgentEnvironment("project-validation-agent");
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-agent-project-"),
+    join(tmpdir(), "omp-herdsman-agent-project-"),
   );
   realFs.mkdirSync(join(project, ".pi", "agents"), { recursive: true });
   realFs.writeFileSync(
@@ -347,11 +347,11 @@ test("managed agent validates project definitions before publishing state", asyn
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "project-parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "project-parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "project-parent",
       },
     },
   ]) as any;
@@ -369,7 +369,7 @@ test("managed agent validates project definitions before publishing state", asyn
 test("trusted same-cwd project assignment launches with native approval", async () => {
   setLeadEnvironment();
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-assign-same-cwd-"),
+    join(tmpdir(), "omp-herdsman-assign-same-cwd-"),
   );
   realFs.mkdirSync(join(project, ".pi", "agents"), { recursive: true });
   realFs.writeFileSync(
@@ -427,7 +427,7 @@ test("trusted same-cwd project assignment launches with native approval", async 
   await (async () => {
     setLeadEnvironment();
     const project = realFs.mkdtempSync(
-      join(tmpdir(), "pi-herdsman-assign-symlink-cwd-"),
+      join(tmpdir(), "omp-herdsman-assign-symlink-cwd-"),
     );
     const projectLink = `${project}-link`;
     realFs.mkdirSync(join(project, ".pi", "agents"), { recursive: true });
@@ -478,7 +478,7 @@ test("trusted same-cwd project assignment launches with native approval", async 
 test("untrusted assignments omit project approval", async () => {
   setLeadEnvironment();
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-approval-untrusted-"),
+    join(tmpdir(), "omp-herdsman-approval-untrusted-"),
   );
   realFs.mkdirSync(join(project, ".pi", "agents"), { recursive: true });
   const startArgs: string[][] = [];
@@ -520,7 +520,7 @@ test("untrusted assignments omit project approval", async () => {
 test("project-only Definitions edits create a global override", async () => {
   setLeadEnvironment();
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-project-edit-"),
+    join(tmpdir(), "omp-herdsman-project-edit-"),
   );
   const projectPath = join(project, ".pi", "agents", "project-only.md");
   const original = "---\nname: project-only\n---\nproject policy\n";
@@ -574,7 +574,7 @@ test("project-only Definitions edits create a global override", async () => {
 test("same-cwd managed parents resolve project children", async () => {
   setAgentEnvironment("project-parent", ["project-child"]);
   const project = realFs.mkdtempSync(
-    join(tmpdir(), "pi-herdsman-parent-project-"),
+    join(tmpdir(), "omp-herdsman-parent-project-"),
   );
   realFs.mkdirSync(join(project, ".pi", "agents"), { recursive: true });
   realFs.writeFileSync(
@@ -585,7 +585,7 @@ test("same-cwd managed parents resolve project children", async () => {
     join(project, ".pi", "agents", "project-child.md"),
     "---\nname: project-child\n---\nchild",
   );
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "project-parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "project-parent";
   const parent = { ...managedState("project-parent"), cwd: project };
   const parentMailbox = agentMailboxPath(WORKSPACE, parent.agentLabel);
   resetAgentMailbox(parentMailbox);
@@ -596,11 +596,11 @@ test("same-cwd managed parents resolve project children", async () => {
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "project-parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "project-parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "project-parent",
       },
     },
   ]) as any;
@@ -640,7 +640,7 @@ test("same-cwd managed parents resolve project children", async () => {
 
 test("parent controller readiness and allowlist fail closed", async () => {
   setAgentEnvironment("delegating-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("delegating-parent");
   const parentMailbox = agentMailboxPath(WORKSPACE, parent.agentLabel);
   resetAgentMailbox(parentMailbox);
@@ -655,11 +655,11 @@ test("parent controller readiness and allowlist fail closed", async () => {
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -709,7 +709,7 @@ test("parent controller readiness and allowlist fail closed", async () => {
   }
 
   setAgentEnvironment("conflicting-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const conflict = managedState("conflicting-parent");
   const conflictMailbox = agentMailboxPath(WORKSPACE, conflict.agentLabel);
   resetAgentMailbox(conflictMailbox);
@@ -724,11 +724,11 @@ test("parent controller readiness and allowlist fail closed", async () => {
   const failingContext = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -797,7 +797,7 @@ test("parent list hides disabled allowed definitions", async () => {
 
 test("parent list omits unrelated unknown mailbox diagnostics", async () => {
   setAgentEnvironment("recovery-parent-no-self-get", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("recovery-parent-no-self-get");
   const child = {
     ...managedState(
@@ -841,11 +841,11 @@ test("parent list omits unrelated unknown mailbox diagnostics", async () => {
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -943,7 +943,7 @@ test("foreign-workspace mailbox is ignored by recovery and list", async () => {
 
 test("parent controls only direct children and enforces session allowlists", async () => {
   setAgentEnvironment("ownership-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("ownership-parent");
   const child = {
     ...managedState(
@@ -994,11 +994,11 @@ test("parent controls only direct children and enforces session allowlists", asy
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
     ownershipResult(
@@ -1025,7 +1025,7 @@ test("parent controls only direct children and enforces session allowlists", asy
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "33333333-3333-4333-8333-333333333333",
           definition: "other",
@@ -1134,7 +1134,7 @@ test("list retains durable agents whose physical identity is not exact", async (
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: valid.piSessionId,
           definition: "agent",
@@ -1344,7 +1344,7 @@ test("assignment session resolution accepts exact paths and UUIDs only", async (
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "018f2f2e-7b13-7abc-8def-0123456789ab",
           definition: "reviewer",
@@ -1421,7 +1421,7 @@ test("owned continuation requires a matching persisted child edge", () => {
   const path = join(testTmpRoot, `owned-validation-${id}.jsonl`);
   const identity = {
     type: "custom",
-    customType: "pi-herdsman-agent-definition",
+    customType: "omp-herdsman-agent-definition",
     data: { sessionId: id, definition: "agent", label: "agent" },
   };
   const session = { id, path, cwd: testTmpRoot, entries: [identity] };
@@ -1471,12 +1471,12 @@ test("context retirement rejects managed session continuation only when enabled"
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId, definition: "agent", label: "retired-agent" },
       },
       {
         type: "custom",
-        customType: "pi-herdsman-agent-context-retired",
+        customType: "omp-herdsman-agent-context-retired",
         data: { sessionId },
       },
     ],
@@ -1524,7 +1524,7 @@ test("session continuation inherits the saved label without an override", async 
       entries: [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: { sessionId: sourceId, definition: "agent", label },
         },
       ],
@@ -1605,7 +1605,7 @@ test("session continuation keeps explicit definition execution overrides", async
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: sourceId, definition, label },
       },
     ],
@@ -1692,7 +1692,7 @@ test("session continuation rejects label overrides and occupied inherited labels
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: "agent",
@@ -1712,7 +1712,7 @@ test("session continuation rejects label overrides and occupied inherited labels
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: source.id, definition: "agent", label },
       },
     ],
@@ -1825,7 +1825,7 @@ test("session assignment rejects the controller's active session", async () => {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: LEAD_SESSION_ID,
           definition: "agent",
@@ -1980,7 +1980,7 @@ test("managed historical sources require durable owner-side ancestry for continu
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: parentId, definition: "agent", label: "parent" },
       },
       ownershipResult(sourceId, parentId, {
@@ -1992,7 +1992,7 @@ test("managed historical sources require durable owner-side ancestry for continu
   const sourceEntries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: { sessionId: sourceId, definition: "agent", label: "owned-source" },
     },
     ownershipResult(parentId, sourceId, { path: parentPath, label: "parent" }),
@@ -2095,7 +2095,7 @@ test("copied fork result history does not invalidate the original owner edge", a
   const parentEntries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: { sessionId: parentId, definition: "agent", label: "parent" },
     },
     ownershipResult(childId, parentId, { path: childPath, label: "child" }),
@@ -2120,7 +2120,7 @@ test("copied fork result history does not invalidate the original owner edge", a
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: childId, definition: "agent", label: "child" },
       },
     ],
@@ -2164,7 +2164,7 @@ test("historical continuation re-parenting preserves every valid ownership path"
   const parentEntries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: { sessionId: parentId, definition: "agent", label: "parent" },
     },
     ownershipResult(childId, parentId, { path: childPath, label: "child" }),
@@ -2188,7 +2188,7 @@ test("historical continuation re-parenting preserves every valid ownership path"
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: childId, definition: "agent", label: "child" },
       },
     ],
@@ -2265,7 +2265,7 @@ test("session assignment fails closed on duplicate live representations", async 
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "018f2f2e-7b13-7abc-8def-0123456789ae",
           definition: "agent",
@@ -2656,7 +2656,7 @@ test("registered lead exposes only explicit live controls", async () => {
       "working",
       identity.piSessionId,
       (requestMailbox, marker) => {
-        const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+        const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
         steerSubmitted = readRequest(requestMailbox, requestId);
         const current = readAgentState(requestMailbox)!;
         writeAgentState(requestMailbox, {
@@ -2748,7 +2748,7 @@ test("registered lead exposes only explicit live controls", async () => {
       "working",
       identity.piSessionId,
       (requestMailbox, marker) => {
-        const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+        const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
         interruptSubmitted = readRequest(requestMailbox, requestId);
         const current = readAgentState(requestMailbox)!;
         writeAgentState(requestMailbox, {
@@ -2832,7 +2832,7 @@ test("successful controls persist their definition before runtime teardown", asy
     };
     const acknowledgeAndTearDown = (requestMailbox: string, marker: string) => {
       const observedRequestId = marker.slice(
-        "__PI_HERDSMAN_AGENT_V4__:".length,
+        "__OMP_HERDSMAN_AGENT_V4__:".length,
       );
       const current = readAgentState(requestMailbox)!;
       writeAgentState(requestMailbox, {
@@ -3533,7 +3533,7 @@ test("assignment status normalization fails closed safely", async () => {
         scenario.status,
         identity.piSessionId,
         (requestMailbox, marker) => {
-          const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+          const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
           const current = readAgentState(requestMailbox)!;
           writeAgentState(requestMailbox, {
             ...current,
@@ -3578,7 +3578,7 @@ test("assignment status normalization fails closed safely", async () => {
         "idle",
         identity.piSessionId,
         (requestMailbox, marker) => {
-          const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+          const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
           const current = readAgentState(requestMailbox)!;
           writeAgentState(requestMailbox, {
             ...current,

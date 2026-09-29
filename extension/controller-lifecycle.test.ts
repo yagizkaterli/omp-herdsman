@@ -80,7 +80,7 @@ const ownedSessionContext = (id: string, label: string) =>
     {
       type: "custom_message",
       message: {
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: {
           piSessionId: id,
           piSessionFile: nativeSessions.get(id)?.path,
@@ -94,7 +94,7 @@ const ownedSessionContext = (id: string, label: string) =>
                 .get(id)
                 ?.entries?.find(
                   (entry: any) =>
-                    entry?.customType === "pi-herdsman-agent-definition",
+                    entry?.customType === "omp-herdsman-agent-definition",
                 ) as any
             )?.data?.definition ?? "agent",
           status: "completed",
@@ -107,7 +107,7 @@ test("parent delegates two same-definition children with exact ownership", async
   setAgentEnvironment("multiplicity-parent", ["child"]);
   const previousForwardingSession = process.env.PI_SUBAGENT_PARENT_SESSION;
   process.env.PI_SUBAGENT_PARENT_SESSION = LEAD_SESSION_ID;
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("multiplicity-parent");
   const parentMailbox = agentMailboxPath(WORKSPACE, parent.agentLabel);
   resetAgentMailbox(parentMailbox);
@@ -132,11 +132,11 @@ test("parent delegates two same-definition children with exact ownership", async
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -166,7 +166,7 @@ test("parent delegates two same-definition children with exact ownership", async
     }
     const guidance = pi.sentMessageCalls.filter(
       ({ message }) =>
-        (message as any).customType === "pi-herdsman-delegation-guidance",
+        (message as any).customType === "omp-herdsman-delegation-guidance",
     );
     assert.equal(guidance.length, 1);
     const content = String((guidance[0].message as any).content);
@@ -212,7 +212,7 @@ test("parent delegates two same-definition children with exact ownership", async
     assert.equal(new Set(states.map((state) => state.paneId)).size, 2);
     assert.equal(
       lifecycle.environmentCommands.filter((command) =>
-        command.includes("PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=[]"),
+        command.includes("OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=[]"),
       ).length,
       2,
     );
@@ -220,7 +220,7 @@ test("parent delegates two same-definition children with exact ownership", async
       lifecycle.environmentCommands.filter(
         (command) =>
           command ===
-          `PI_HERDSMAN_OWNER_SESSION_ID=${context.sessionManager.getSessionId()}`,
+          `OMP_HERDSMAN_OWNER_SESSION_ID=${context.sessionManager.getSessionId()}`,
       ).length,
       2,
     );
@@ -244,7 +244,7 @@ test("parent delegates two same-definition children with exact ownership", async
     }
     assert.equal(
       pi.entries.filter(
-        (entry: any) => entry.customType === "pi-herdsman-herd-run",
+        (entry: any) => entry.customType === "omp-herdsman-herd-run",
       ).length,
       0,
     );
@@ -261,9 +261,9 @@ test("parent delegates two same-definition children with exact ownership", async
 });
 
 function writePlacementSetting(placement: "tab" | "subtree" | "split") {
-  realFs.mkdirSync(join(PI_AGENT_ROOT, "pi-herdsman"), { recursive: true });
+  realFs.mkdirSync(join(PI_AGENT_ROOT, "omp-herdsman"), { recursive: true });
   realFs.writeFileSync(
-    join(PI_AGENT_ROOT, "pi-herdsman", "config.json"),
+    join(PI_AGENT_ROOT, "omp-herdsman", "config.json"),
     JSON.stringify({ spawnPlacement: placement }),
   );
 }
@@ -276,7 +276,7 @@ function registerNativeAgentSession(state: ManagedAgentState): void {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: state.piSessionId,
           definition: "agent",
@@ -389,7 +389,7 @@ test("lead direct placement modes use real controller delegation", async () => {
       for (const childMailbox of childMailboxes)
         resetAgentMailbox(childMailbox);
       nativeSessions.delete(parent.piSessionId);
-      realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+      realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
         force: true,
       });
     }
@@ -440,7 +440,7 @@ test("lead split-to-tab placement creates a dedicated agents tab", async () => {
     resetAgentMailbox(parentMailbox);
     for (const mailbox of childMailboxes) resetAgentMailbox(mailbox);
     nativeSessions.delete(parent.piSessionId);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }
@@ -510,7 +510,7 @@ test("lead tab placement vetoes an ambiguous current-lead direct root", async ()
       resetAgentMailbox(mailbox);
     nativeSessions.delete(parent.piSessionId);
     nativeSessions.delete(direct.piSessionId);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }
@@ -581,7 +581,7 @@ test("lead tab placement vetoes ambiguous foreign-herd evidence", async () => {
       resetAgentMailbox(mailbox);
     nativeSessions.delete(parent.piSessionId);
     nativeSessions.delete(foreign.piSessionId);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }
@@ -651,7 +651,7 @@ test("lead tab placement rejects old shared tabs and only changes future starts"
     for (const childMailbox of childMailboxes) resetAgentMailbox(childMailbox);
     nativeSessions.delete(parent.piSessionId);
     nativeSessions.delete(sibling.piSessionId);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }
@@ -729,7 +729,7 @@ test("lead tab revalidation rejects a newly contaminated candidate under the loc
     resetAgentMailbox(childMailbox);
     nativeSessions.delete(parent.piSessionId);
     nativeSessions.delete(sibling.piSessionId);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }
@@ -747,13 +747,13 @@ test("managed-agent delegation always splits in its current pane for every lead 
     resetAgentMailbox(parentMailbox);
     writeAgentState(parentMailbox, parent);
     const lifecycle = delegatedLifecycleExecutor(parent);
-    process.env.PI_HERDSMAN_MAILBOX = parentMailbox;
-    process.env.PI_HERDSMAN_RUN_ID = parent.runId;
-    process.env.PI_HERDSMAN_OWNER_SESSION_ID = parent.ownerSessionId;
-    process.env.PI_HERDSMAN_LABEL = parent.agentLabel;
-    process.env.PI_HERDSMAN_WORKSPACE_ID = WORKSPACE;
-    process.env.PI_HERDSMAN_AGENT_DEFINITION = "agent";
-    process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify([
+    process.env.OMP_HERDSMAN_MAILBOX = parentMailbox;
+    process.env.OMP_HERDSMAN_RUN_ID = parent.runId;
+    process.env.OMP_HERDSMAN_OWNER_SESSION_ID = parent.ownerSessionId;
+    process.env.OMP_HERDSMAN_LABEL = parent.agentLabel;
+    process.env.OMP_HERDSMAN_WORKSPACE_ID = WORKSPACE;
+    process.env.OMP_HERDSMAN_AGENT_DEFINITION = "agent";
+    process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify([
       "agent",
     ]);
     process.env.HERDR_PANE_ID = parent.paneId;
@@ -762,11 +762,11 @@ test("managed-agent delegation always splits in its current pane for every lead 
     const context = fakeAgentContext([
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "agent",
-          label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+          label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
         },
       },
     ]);
@@ -802,7 +802,7 @@ test("managed-agent delegation always splits in its current pane for every lead 
       pi.events.get("session_shutdown")?.[0]();
       resetAgentMailbox(parentMailbox);
       resetAgentMailbox(childMailbox);
-      realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+      realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
         force: true,
       });
     }
@@ -851,7 +851,7 @@ test("parent delegation lock makes concurrent close and delegate fail fast", asy
   const leadPi = fakePi({ exec: sharedExec });
   registerExtension!(leadPi.pi as never);
   setAgentEnvironment("race-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   writeAgentState(parentMailbox, parent);
   writeAgentState(childMailbox, child);
   const parentPi = fakePi({ exec: sharedExec });
@@ -859,11 +859,11 @@ test("parent delegation lock makes concurrent close and delegate fail fast", asy
   const parentContext = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -1524,7 +1524,7 @@ test("staged fresh assignment removes a fast completion without observing workin
     await t.waitFor(() =>
       assert.ok(
         fixture.pi.sent.some(
-          (message: any) => message.customType === "pi-herdsman-agent-result",
+          (message: any) => message.customType === "omp-herdsman-agent-result",
         ),
         "fast completion result was not delivered",
       ),
@@ -1591,7 +1591,7 @@ test("lead herd runs start once and stay open through intermediate settlement", 
   const context = fakeContext(pi.entries);
   const herdEntries = () =>
     pi.entries.filter(
-      (entry: any) => entry.customType === "pi-herdsman-herd-run",
+      (entry: any) => entry.customType === "omp-herdsman-herd-run",
     ) as any[];
   const emit = async (name: string) => {
     for (const handler of pi.events.get(name) ?? [])
@@ -1675,7 +1675,7 @@ test("restored herd run keeps its start and closes after settlement", async (t) 
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-herd-run",
+      customType: "omp-herdsman-herd-run",
       data: {
         phase: "started",
         sessionId: LEAD_SESSION_ID,
@@ -1689,7 +1689,7 @@ test("restored herd run keeps its start and closes after settlement", async (t) 
   const context = fakeContext(entries);
   const herdEntries = () =>
     entries.filter(
-      (entry: any) => entry.customType === "pi-herdsman-herd-run",
+      (entry: any) => entry.customType === "omp-herdsman-herd-run",
     ) as any[];
   registerExtension!(pi.pi as never);
   try {
@@ -1779,12 +1779,12 @@ test("recovery cleanup finishes an idle restored herd without settlement", async
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-herd-run",
+      customType: "omp-herdsman-herd-run",
       data: { phase: "started", sessionId: LEAD_SESSION_ID, startedAt },
     },
     {
       type: "custom",
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: resultEntryDetails(state, requestId),
     },
   ];
@@ -1792,7 +1792,7 @@ test("recovery cleanup finishes an idle restored herd without settlement", async
   const context = fakeContext(entries);
   const herdEntries = () =>
     entries.filter(
-      (entry: any) => entry.customType === "pi-herdsman-herd-run",
+      (entry: any) => entry.customType === "omp-herdsman-herd-run",
     ) as any[];
   registerExtension!(pi.pi as never);
   try {
@@ -1807,7 +1807,7 @@ test("recovery cleanup finishes an idle restored herd without settlement", async
     assert.equal(readResult(startup.mailbox, requestId), undefined);
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-result",
+        (message: any) => message.customType === "omp-herdsman-agent-result",
       ).length,
       0,
     );
@@ -1844,7 +1844,7 @@ test("completed and mismatched herd history does not resurrect", async () => {
     setLeadEnvironment();
     const entries = history.map((data) => ({
       type: "custom",
-      customType: "pi-herdsman-herd-run",
+      customType: "omp-herdsman-herd-run",
       data,
     }));
     const pi = fakePi({ entries });
@@ -1858,7 +1858,7 @@ test("completed and mismatched herd history does not resurrect", async () => {
       assert.equal(
         entries.filter(
           (entry: any) =>
-            entry.customType === "pi-herdsman-herd-run" &&
+            entry.customType === "omp-herdsman-herd-run" &&
             entry.data?.phase === "finished",
         ).length,
         history.filter((data) => data.phase === "finished").length,
@@ -1876,7 +1876,7 @@ test("restored herd waits for direct durable cleanup before finishing", async (t
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-herd-run",
+      customType: "omp-herdsman-herd-run",
       data: { phase: "started", sessionId: LEAD_SESSION_ID, startedAt: 1_000 },
     },
   ];
@@ -1887,7 +1887,7 @@ test("restored herd waits for direct durable cleanup before finishing", async (t
   const context = fakeContext(entries);
   const herdEntries = () =>
     entries.filter(
-      (entry: any) => entry.customType === "pi-herdsman-herd-run",
+      (entry: any) => entry.customType === "omp-herdsman-herd-run",
     ) as any[];
   registerExtension!(pi.pi as never);
   try {
@@ -1948,13 +1948,13 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
   ): void => {
     process.env.HERDR_ENV = "1";
     process.env.HERDR_WORKSPACE_ID = WORKSPACE;
-    process.env.PI_HERDSMAN_MAILBOX = agentMailboxPath(WORKSPACE, label);
-    process.env.PI_HERDSMAN_RUN_ID = AGENT_ID;
-    process.env.PI_HERDSMAN_OWNER_SESSION_ID = ownerSessionId;
-    process.env.PI_HERDSMAN_LABEL = label;
-    process.env.PI_HERDSMAN_WORKSPACE_ID = WORKSPACE;
-    process.env.PI_HERDSMAN_AGENT_DEFINITION = definition;
-    process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify(
+    process.env.OMP_HERDSMAN_MAILBOX = agentMailboxPath(WORKSPACE, label);
+    process.env.OMP_HERDSMAN_RUN_ID = AGENT_ID;
+    process.env.OMP_HERDSMAN_OWNER_SESSION_ID = ownerSessionId;
+    process.env.OMP_HERDSMAN_LABEL = label;
+    process.env.OMP_HERDSMAN_WORKSPACE_ID = WORKSPACE;
+    process.env.OMP_HERDSMAN_AGENT_DEFINITION = definition;
+    process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify(
       allowedAgentDefinitions,
     );
     process.env.HERDR_PANE_ID =
@@ -1990,11 +1990,11 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
       [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
             definition: "child",
-            label: process.env.PI_HERDSMAN_LABEL ?? "child",
+            label: process.env.OMP_HERDSMAN_LABEL ?? "child",
           },
         },
       ],
@@ -2028,11 +2028,11 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
     const parentEntries: unknown[] = [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "agent",
-          label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+          label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
         },
       },
     ];
@@ -2078,13 +2078,13 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
     );
     parentAgent.events.get("session_shutdown")?.[0]();
 
-    delete process.env.PI_HERDSMAN_MAILBOX;
-    delete process.env.PI_HERDSMAN_RUN_ID;
-    delete process.env.PI_HERDSMAN_OWNER_SESSION_ID;
-    delete process.env.PI_HERDSMAN_LABEL;
-    delete process.env.PI_HERDSMAN_WORKSPACE_ID;
-    delete process.env.PI_HERDSMAN_AGENT_DEFINITION;
-    delete process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS;
+    delete process.env.OMP_HERDSMAN_MAILBOX;
+    delete process.env.OMP_HERDSMAN_RUN_ID;
+    delete process.env.OMP_HERDSMAN_OWNER_SESSION_ID;
+    delete process.env.OMP_HERDSMAN_LABEL;
+    delete process.env.OMP_HERDSMAN_WORKSPACE_ID;
+    delete process.env.OMP_HERDSMAN_AGENT_DEFINITION;
+    delete process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS;
     delete process.env.HERDR_PANE_ID;
     process.env.HERDR_ENV = "1";
     process.env.HERDR_WORKSPACE_ID = WORKSPACE;
@@ -2093,7 +2093,7 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
       "working",
       parent.piSessionId,
       (requestMailbox, marker) => {
-        const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+        const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
         leadReply = readRequest(requestMailbox, requestId);
         const current = readAgentState(requestMailbox)!;
         writeAgentState(requestMailbox, {
@@ -2148,11 +2148,11 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
     const parentReplyContext = fakeAgentContext([
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "agent",
-          label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+          label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
         },
       },
     ]);
@@ -2196,11 +2196,11 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
       [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
             definition: "agent",
-            label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+            label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
           },
         },
       ],
@@ -2246,11 +2246,11 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
     const childResultContext = fakeAgentContext([
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "child",
-          label: process.env.PI_HERDSMAN_LABEL ?? "child",
+          label: process.env.OMP_HERDSMAN_LABEL ?? "child",
         },
       },
     ]);
@@ -2299,15 +2299,15 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
     const parentResultEntries: unknown[] = [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "agent",
-          label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+          label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
         },
       },
       {
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(child, childRequestId),
       },
     ];
@@ -2356,7 +2356,7 @@ test("registered extensions preserve adjacent ask escalation and assignment resu
 
 test("one failed child recovery does not clear valid sibling runtimes", async () => {
   setAgentEnvironment("recovery-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("recovery-parent");
   const badChild = {
     ...managedState(
@@ -2389,11 +2389,11 @@ test("one failed child recovery does not clear valid sibling runtimes", async ()
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ];
@@ -2462,7 +2462,7 @@ test("historical session with its inherited label rejects an active managed repr
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: { sessionId: identity.piSessionId, definition: name, label },
       },
     ],
@@ -2552,7 +2552,7 @@ test("exact requested session IDs remain busy when persisted paths are stale", a
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -2615,7 +2615,7 @@ test("concurrent session activation permits one generation", async () => {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -2825,7 +2825,7 @@ test("session assignment reports a pane mismatch from the agent state producer",
               name: runScopedHerdrAlias(
                 WORKSPACE,
                 label,
-                paneEnvironment.PI_HERDSMAN_RUN_ID ?? AGENT_ID,
+                paneEnvironment.OMP_HERDSMAN_RUN_ID ?? AGENT_ID,
               ),
               pane_id: "agent-pane",
               tab_id: "producer-tab",
@@ -2843,7 +2843,7 @@ test("session assignment reports a pane mismatch from the agent state producer",
             herdr_agent: runScopedHerdrAlias(
               WORKSPACE,
               label,
-              paneEnvironment.PI_HERDSMAN_RUN_ID ?? AGENT_ID,
+              paneEnvironment.OMP_HERDSMAN_RUN_ID ?? AGENT_ID,
             ),
             herdr_kind: "pi",
             agent_definition: "agent",
@@ -3001,7 +3001,7 @@ test("startup failure cleans private prompt snapshots", async () => {
     assert.notEqual(result.details.ok, true);
     assert.equal(
       pi.entries.filter(
-        (entry: any) => entry.customType === "pi-herdsman-herd-run",
+        (entry: any) => entry.customType === "omp-herdsman-herd-run",
       ).length,
       0,
     );
@@ -3177,7 +3177,7 @@ test("fresh and non-live historical assignments reject disabled definitions", as
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: historicalName,
@@ -3291,7 +3291,7 @@ test("session continuation starts a new agent generation with current prompt con
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3380,7 +3380,7 @@ test("session continuation ignores an unrelated missing live session path", asyn
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3471,7 +3471,7 @@ test("session continuation keeps an exact live ID busy despite a missing path ob
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3560,7 +3560,7 @@ test("session continuation keeps an exact live ID busy despite contradictory liv
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3658,7 +3658,7 @@ test("session continuation ignores removed secondary session fields", async () =
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3754,7 +3754,7 @@ test("session continuation fails closed on an unrelated malformed persisted mail
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: DEFAULT_PI_SESSION_ID,
           definition: name,
@@ -3829,9 +3829,9 @@ test("rejects known generated-label envelope overflow before startup", async () 
   const startup = startupExecutor(label, () => DEFAULT_PI_SESSION_ID);
   realFs.rmSync(startup.mailbox, { recursive: true, force: true });
   const mailboxLimit = 64 * 1024;
-  realFs.mkdirSync(join(PI_AGENT_ROOT, "pi-herdsman"), { recursive: true });
+  realFs.mkdirSync(join(PI_AGENT_ROOT, "omp-herdsman"), { recursive: true });
   realFs.writeFileSync(
-    join(PI_AGENT_ROOT, "pi-herdsman", "config.json"),
+    join(PI_AGENT_ROOT, "omp-herdsman", "config.json"),
     JSON.stringify({ mailboxPayloadLimitBytes: mailboxLimit }),
   );
   const pi = fakePi({ exec: startup.exec });
@@ -3862,7 +3862,7 @@ test("rejects known generated-label envelope overflow before startup", async () 
   } finally {
     pi.events.get("session_shutdown")?.[0]();
     resetAgentMailbox(startup.mailbox);
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman", "config.json"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman", "config.json"), {
       force: true,
     });
   }

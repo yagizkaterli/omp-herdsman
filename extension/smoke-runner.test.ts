@@ -108,7 +108,7 @@ test("smoke model falls back to effective Git config", async () => {
     undefined,
     async (file, args, options) => {
       assert.equal(file, "git");
-      assert.deepEqual(args, ["config", "--get", "pi-herdsman.smoke-model"]);
+      assert.deepEqual(args, ["config", "--get", "omp-herdsman.smoke-model"]);
       assert.ok(options.cwd);
       return { stdout: "provider/model:xhigh\n", stderr: "", pid: 1 };
     },
@@ -122,7 +122,7 @@ test("smoke model requires configuration when no override exists", async () => {
     resolveSmokeModel(undefined, async () => {
       throw missing;
     }),
-    /git config --local pi-herdsman\.smoke-model/,
+    /git config --local omp-herdsman\.smoke-model/,
   );
 });
 
@@ -162,7 +162,7 @@ test("smoke auth resolves credentials from the configured model", async () => {
 
 test("chief-tree startup prompt creates one ordinary Lead branch for harness controls", () => {
   const prompt = initialPromptForScenario("chief-tree", {});
-  assert.equal(prompt, "Reply exactly with PI_HERDSMAN_CHIEF_TREE_STARTUP.");
+  assert.equal(prompt, "Reply exactly with OMP_HERDSMAN_CHIEF_TREE_STARTUP.");
   assert.doesNotMatch(prompt, /\/chief|\/tree/i);
 });
 
@@ -181,14 +181,14 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
       message: {
         role: "assistant",
         stopReason: "stop",
-        content: "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+        content: "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       },
     },
     {
       type: "custom",
       id: "chief-state",
       parentId: "startup-answer",
-      customType: "pi-herdsman-chief-state",
+      customType: "omp-herdsman-chief-state",
     },
     {
       type: "message",
@@ -209,7 +209,7 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
       message: {
         role: "assistant",
         stopReason: "stop",
-        content: "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+        content: "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
       },
     },
   ]
@@ -219,9 +219,9 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
     chiefTreeBranchPlan(
       contents,
       "startup prompt",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       "post-Chief prompt",
-      "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+      "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
     ),
     { targetId: "startup-answer" },
   );
@@ -231,9 +231,9 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
     chiefTreeBranchPlan(
       noPostChiefTurn,
       "startup prompt",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       "post-Chief prompt",
-      "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+      "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
     ).error,
     /one completed Chief turn/,
   );
@@ -247,9 +247,9 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
     chiefTreeBranchPlan(
       extraTurn,
       "startup prompt",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       "post-Chief prompt",
-      "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+      "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
     ).error,
     /unexpected completed model turn/,
   );
@@ -263,9 +263,9 @@ test("chief-tree requires a persisted post-Chief turn and targets the pre-Chief 
     chiefTreeBranchPlan(
       extraPrompt,
       "startup prompt",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       "post-Chief prompt",
-      "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+      "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
     ).error,
     /unexpected user prompt/,
   );
@@ -280,39 +280,39 @@ test("chief-tree selector locates the unique selected preview and reads the visi
   assert.equal(chiefTreeFooter("(0/0)"), null);
   assert.equal(
     chiefTreeSelectedRow(
-      "    › ├─ • assistant: PI_HERDSMAN_CHIEF_TREE_STARTUP",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "    › ├─ • assistant: OMP_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
     ),
     true,
   );
   assert.equal(
     chiefTreeSelectedRow(
-      "  │  › └─ assistant: PI_HERDSMAN_CHIEF_TREE_STARTUP",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "  │  › └─ assistant: OMP_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
     ),
     true,
   );
   assert.equal(
     chiefTreeSelectedRow(
-      "    ├─ • assistant: PI_HERDSMAN_CHIEF_TREE_STARTUP",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "    ├─ • assistant: OMP_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
     ),
     false,
   );
   assert.equal(
     chiefTreeSelectedRow(
-      "› assistant: PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "› assistant: OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
     ),
     false,
   );
   assert.equal(
     chiefTreeSelectedRow(
       [
-        "› assistant: PI_HERDSMAN_CHIEF_TREE_STARTUP",
-        "› assistant: PI_HERDSMAN_CHIEF_TREE_STARTUP",
+        "› assistant: OMP_HERDSMAN_CHIEF_TREE_STARTUP",
+        "› assistant: OMP_HERDSMAN_CHIEF_TREE_STARTUP",
       ].join("\n"),
-      "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+      "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
     ),
     false,
   );
@@ -327,7 +327,7 @@ test("nested pane input returns raw Herdr output and targets the exact isolated 
       piAgent: "/tmp/smoke/pi-agent",
       piSessions: "/tmp/smoke/pi-sessions",
     },
-    sessionName: "pi-herdsman-smoke-test",
+    sessionName: "omp-herdsman-smoke-test",
   };
   const rawOutput = { stdout: "pane input accepted", stderr: "", pid: 123 };
   const result = await nestedPaneInput(
@@ -354,7 +354,7 @@ test("nested pane text reads bounded Herdr stdout without JSON parsing", async (
       piAgent: "/tmp/smoke/pi-agent",
       piSessions: "/tmp/smoke/pi-sessions",
     },
-    sessionName: "pi-herdsman-smoke-test",
+    sessionName: "omp-herdsman-smoke-test",
   };
   const screen = "startup Lead branch\n>";
   const text = await nestedPaneText(
@@ -388,7 +388,7 @@ test("pane commands submit literal text with one explicit Enter", async () => {
       piAgent: "/tmp/smoke/pi-agent",
       piSessions: "/tmp/smoke/pi-sessions",
     },
-    sessionName: "pi-herdsman-smoke-test",
+    sessionName: "omp-herdsman-smoke-test",
   };
   const calls = [];
   await submitPaneCommand(ctx, "w1:p2", "/chief", async (file, args) => {
@@ -434,7 +434,7 @@ test("Chief tree probe is opt-in, last in root extension order, and validates th
     "--model",
     config.model,
   ]);
-  const resultPath = "/tmp/pi-herdsman-smoke/chief-tree-tools.json";
+  const resultPath = "/tmp/omp-herdsman-smoke/chief-tree-tools.json";
   const source = chiefTreeProbeSource(resultPath);
   assert.match(source, /getActiveTools/);
   assert.match(source, /session_tree/);
@@ -458,7 +458,7 @@ test("Chief tree probe is opt-in, last in root extension order, and validates th
 
 test("core requires the prompt-correlated root assistant marker, not root status", () => {
   const prompt = "delegate the task";
-  const marker = "PI_HERDSMAN_SMOKE_OK pi-herdsman@0.16.0";
+  const marker = "OMP_HERDSMAN_SMOKE_OK omp-herdsman@0.16.0";
   const contents = [
     { type: "message", id: "user", message: { role: "user", content: prompt } },
     {
@@ -484,7 +484,7 @@ test("core requires the prompt-correlated root assistant marker, not root status
 
 test("continuation accepts a prefixed marker only in the stopped response descended from its exact prompt", () => {
   const prompt = "continue the saved session";
-  const marker = "PI_HERDSMAN_CONTINUATION_SECOND";
+  const marker = "OMP_HERDSMAN_CONTINUATION_SECOND";
   const contents = [
     {
       type: "message",
@@ -498,7 +498,7 @@ test("continuation accepts a prefixed marker only in the stopped response descen
       message: {
         role: "assistant",
         stopReason: "stop",
-        content: `pi-herdsman ${marker}`,
+        content: `omp-herdsman ${marker}`,
       },
     },
     {
@@ -513,7 +513,7 @@ test("continuation accepts a prefixed marker only in the stopped response descen
       message: {
         role: "assistant",
         stopReason: "stop",
-        content: `pi-herdsman ${marker}`,
+        content: `omp-herdsman ${marker}`,
       },
     },
     {

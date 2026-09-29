@@ -5,8 +5,8 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, extname, join, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import test from "node:test";
-import { initTheme } from "@earendil-works/pi-coding-agent";
-import { Box } from "@earendil-works/pi-tui";
+import { initTheme } from "@oh-my-pi/pi-coding-agent";
+import { Box } from "@oh-my-pi/pi-tui";
 import {
   collapseDisplayText,
   displayHomePath,
@@ -268,7 +268,7 @@ test("Supervision ambient projections share status and empty-state semantics", (
     assert.match(fresh.widget, /1 herd/);
     assert.match(fresh.ambient, /chief/);
     assert.doesNotMatch(fresh.ambient, /Chief/);
-    assert.match(fresh.notification, /Pi Herdsman/);
+    assert.match(fresh.notification, /OMP Herdsman/);
     assert.match(fresh.notification, /1 herd/);
     assert.doesNotMatch(fresh.ambient, /stale|unavailable/);
     assert.doesNotMatch(fresh.notification, /stale|unavailable/);
@@ -3051,7 +3051,7 @@ test("Completion rendering preserves details, failures, elapsed time, and width 
         status: "completed" as const,
         elapsedMs: 123_000,
         contextUsage: { tokens: 72, contextWindow: 100, percent: 72 },
-        fullOutputPath: "/tmp/pi-herdsman/very-long-full-output-path",
+        fullOutputPath: "/tmp/omp-herdsman/very-long-full-output-path",
         resultRef: "result:550e8400-e29b-41d4-a716-446655440000",
         truncated: false,
       },

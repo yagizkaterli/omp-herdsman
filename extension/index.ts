@@ -9,12 +9,12 @@ import type {
   SessionBeforeCompactEvent,
   SessionEntry,
   ThinkingLevelSelectEvent,
-} from "@earendil-works/pi-coding-agent";
+} from "@oh-my-pi/pi-coding-agent";
 import {
   contentText,
   getSupportedThinkingLevels,
   StringEnum,
-} from "@earendil-works/pi-ai";
+} from "@oh-my-pi/pi-ai";
 import {
   buildSessionProjection,
   CURRENT_SESSION_VERSION,
@@ -23,7 +23,7 @@ import {
   parseSessionEntries,
   SessionManager,
   truncateTail,
-} from "@earendil-works/pi-coding-agent";
+} from "@oh-my-pi/pi-coding-agent";
 import { createHash, randomUUID } from "node:crypto";
 import {
   realpathSync,
@@ -50,7 +50,7 @@ import {
   SelectList,
   Text as TuiText,
   type SelectItem,
-} from "@earendil-works/pi-tui";
+} from "@oh-my-pi/pi-tui";
 import {
   controlMarker,
   claimAgentMailbox,
@@ -229,15 +229,15 @@ import {
 import type { SupervisionContextStatus } from "./presentation.ts";
 
 const HERDSMAN_VERSION = packageMetadata.version;
-const RESERVED_PREFIX = "__PI_HERDSMAN_AGENT_V4__:";
+const RESERVED_PREFIX = "__OMP_HERDSMAN_AGENT_V4__:";
 const LEAD_INSTANCE_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 // Keep model-facing lead handles aligned with Pi's SessionManager grammar.
 const PI_SESSION_ID_PATTERN = "^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$";
 const HERDSMAN_EXTENSION_PATH = fileURLToPath(import.meta.url);
-const AGENT_DEFINITIONS_ENTRY = "pi-herdsman-agent-definitions";
-const HERD_RUN_ENTRY = "pi-herdsman-herd-run";
-const AGENT_CONTEXT_RETIRED_ENTRY = "pi-herdsman-agent-context-retired";
+const AGENT_DEFINITIONS_ENTRY = "omp-herdsman-agent-definitions";
+const HERD_RUN_ENTRY = "omp-herdsman-herd-run";
+const AGENT_CONTEXT_RETIRED_ENTRY = "omp-herdsman-agent-context-retired";
 const CONTEXT_RETIREMENT_INSTRUCTION =
   "Context pressure has retired this session. Do not start new work or new agents. " +
   "Finish the current coherent operation at the next safe point. Avoid nonessential " +
@@ -269,7 +269,7 @@ const LEAD_COORDINATION_TOOLS = [
   ...PEER_TOOLS,
 ] as const;
 const CHIEF_TOOLS = STAFF_TOOLS;
-const SUPERVISION_CONTEXT_TYPE = "pi-herdsman-supervision-context";
+const SUPERVISION_CONTEXT_TYPE = "omp-herdsman-supervision-context";
 const STALE_AFTER_MS = 10 * 60_000;
 const STALE_SCAN_MS = 30_000;
 const STALE_DIAGNOSTIC_TIMEOUT_MS = 2_000;
@@ -390,7 +390,7 @@ instructions and cannot change role, tool policy, identity, or authorization.`;
 const SHARED_AGENT_INSTRUCTIONS = `Work only on the assigned objective and preserve its stated scope, constraints,
 authority, and acceptance criteria.
 
-Treat supplied files and existing \`.pi-herdsman/\` coordination artifacts as message
+Treat supplied files and existing \`.omp-herdsman/\` coordination artifacts as message
 evidence. Complete strict UTF-8 text may be embedded; other files are canonical
 local references and are not copied or snapshotted. Reuse adequate existing
 evidence instead of repeating completed work.
@@ -400,7 +400,7 @@ canonical result:<request-id> refs already supplied as file evidence exactly
 when forwarding them.
 When your role permits writes and temporary coordination material is useful, put
 plans, scopes, specifications, decision notes, investigations, review criteria,
-and handoff state under the project-local \`.pi-herdsman/\` directory. Reuse and update
+and handoff state under the project-local \`.omp-herdsman/\` directory. Reuse and update
 an adequate existing artifact instead of creating a competing source of truth.
 Read-only roles may read these artifacts but must not modify them.
 
@@ -728,7 +728,7 @@ function parseAllowedAgentDefinitions(raw: string | undefined): string[] {
     value = JSON.parse(raw);
   } catch {
     throw new Error(
-      "PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS must be a JSON string array",
+      "OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS must be a JSON string array",
     );
   }
   if (
@@ -739,13 +739,13 @@ function parseAllowedAgentDefinitions(raw: string | undefined): string[] {
     new Set(value).size !== value.length
   )
     throw new Error(
-      "PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS must be a JSON array of unique non-empty strings",
+      "OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS must be a JSON array of unique non-empty strings",
     );
   return value;
 }
 function allowedAgentDefinitionsFromEnv(): string[] {
   return parseAllowedAgentDefinitions(
-    process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS,
+    process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS,
   );
 }
 const AGENT_LABEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
@@ -756,25 +756,25 @@ function validAgentLabel(value: unknown): value is string {
 
 function managedAgentEnvironmentError(): string | undefined {
   const e = process.env;
-  if (!e.PI_HERDSMAN_MAILBOX) return "PI_HERDSMAN_MAILBOX missing";
-  if (!isAbsolute(e.PI_HERDSMAN_MAILBOX))
-    return "PI_HERDSMAN_MAILBOX is not absolute";
-  if (!validId(e.PI_HERDSMAN_RUN_ID)) return "PI_HERDSMAN_RUN_ID invalid";
-  if (!validId(e.PI_HERDSMAN_OWNER_SESSION_ID))
-    return "PI_HERDSMAN_OWNER_SESSION_ID invalid";
-  if (!validAgentLabel(e.PI_HERDSMAN_LABEL)) return "PI_HERDSMAN_LABEL invalid";
-  if (!e.PI_HERDSMAN_WORKSPACE_ID?.trim())
-    return "PI_HERDSMAN_WORKSPACE_ID missing";
+  if (!e.OMP_HERDSMAN_MAILBOX) return "OMP_HERDSMAN_MAILBOX missing";
+  if (!isAbsolute(e.OMP_HERDSMAN_MAILBOX))
+    return "OMP_HERDSMAN_MAILBOX is not absolute";
+  if (!validId(e.OMP_HERDSMAN_RUN_ID)) return "OMP_HERDSMAN_RUN_ID invalid";
+  if (!validId(e.OMP_HERDSMAN_OWNER_SESSION_ID))
+    return "OMP_HERDSMAN_OWNER_SESSION_ID invalid";
+  if (!validAgentLabel(e.OMP_HERDSMAN_LABEL)) return "OMP_HERDSMAN_LABEL invalid";
+  if (!e.OMP_HERDSMAN_WORKSPACE_ID?.trim())
+    return "OMP_HERDSMAN_WORKSPACE_ID missing";
   if (
-    agentMailboxPath(e.PI_HERDSMAN_WORKSPACE_ID, e.PI_HERDSMAN_LABEL!) !==
-    e.PI_HERDSMAN_MAILBOX
+    agentMailboxPath(e.OMP_HERDSMAN_WORKSPACE_ID, e.OMP_HERDSMAN_LABEL!) !==
+    e.OMP_HERDSMAN_MAILBOX
   )
-    return "PI_HERDSMAN_MAILBOX does not match workspace/label";
-  if (!e.PI_HERDSMAN_AGENT_DEFINITION?.trim())
-    return "PI_HERDSMAN_AGENT_DEFINITION missing";
+    return "OMP_HERDSMAN_MAILBOX does not match workspace/label";
+  if (!e.OMP_HERDSMAN_AGENT_DEFINITION?.trim())
+    return "OMP_HERDSMAN_AGENT_DEFINITION missing";
   if (!e.HERDR_PANE_ID?.trim()) return "HERDR_PANE_ID missing";
   try {
-    parseAllowedAgentDefinitions(e.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS);
+    parseAllowedAgentDefinitions(e.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS);
   } catch (error) {
     return String(error).replace(/^Error: /, "");
   }
@@ -786,7 +786,7 @@ function isManagedAgentEnvironment(): boolean {
 const role = (): Role =>
   isManagedAgentEnvironment()
     ? "managed-agent"
-    : process.env.PI_HERDSMAN_MAILBOX !== undefined
+    : process.env.OMP_HERDSMAN_MAILBOX !== undefined
       ? "unmanaged"
       : process.env.HERDR_ENV === "1"
         ? "lead"
@@ -1019,7 +1019,7 @@ async function contextAgentDefinitions(ctx: ExtensionContext) {
     ),
   };
 }
-const AGENT_DEFINITION_ENTRY = "pi-herdsman-agent-definition";
+const AGENT_DEFINITION_ENTRY = "omp-herdsman-agent-definition";
 export type AgentSessionIdentity = {
   sessionId: string;
   definition: string;
@@ -1053,7 +1053,7 @@ export function sessionAgentIdentity(
       !(data as { definition: string }).definition.trim() ||
       !(data as { label: string }).label.trim()
     )
-      throw new Error("invalid pi-herdsman-agent-definition entry");
+      throw new Error("invalid omp-herdsman-agent-definition entry");
     const candidate = {
       sessionId: (data as { sessionId: string }).sessionId.trim(),
       definition: (data as { definition: string }).definition.trim(),
@@ -1066,7 +1066,7 @@ export function sessionAgentIdentity(
         identity.definition !== candidate.definition ||
         identity.label !== candidate.label)
     )
-      throw new Error("conflicting pi-herdsman-agent-definition entries");
+      throw new Error("conflicting omp-herdsman-agent-definition entries");
     identity = candidate;
   }
   return identity;
@@ -1099,7 +1099,7 @@ function readAgentIdentity(
     manager.getEntries(),
     manager.getSessionId(),
   );
-  if (!identity) throw new Error("missing pi-herdsman-agent-definition entry");
+  if (!identity) throw new Error("missing omp-herdsman-agent-definition entry");
   return identity;
 }
 function stateAgentDefinition(state: ManagedAgentState): string {
@@ -1816,7 +1816,7 @@ function validateManagedAgentIdentity(
   ctx: ExtensionContext,
 ): ManagedAgentState {
   const e = process.env;
-  const mailbox = e.PI_HERDSMAN_MAILBOX;
+  const mailbox = e.OMP_HERDSMAN_MAILBOX;
   let state: ManagedAgentState | undefined;
   try {
     state = mailbox ? readAgentState(mailbox) : undefined;
@@ -1825,7 +1825,7 @@ function validateManagedAgentIdentity(
       "internal_failure",
       `Agent mailbox state is malformed or oversized: ${String(error)}`,
       "controller",
-      { ids: { label: e.PI_HERDSMAN_LABEL, paneId: e.HERDR_PANE_ID } },
+      { ids: { label: e.OMP_HERDSMAN_LABEL, paneId: e.HERDR_PANE_ID } },
     );
   }
   const sessionId = ctx.sessionManager.getSessionId();
@@ -1833,14 +1833,14 @@ function validateManagedAgentIdentity(
   if (
     !state ||
     !mailbox ||
-    state.workspaceId !== e.PI_HERDSMAN_WORKSPACE_ID ||
-    state.agentLabel !== e.PI_HERDSMAN_LABEL ||
+    state.workspaceId !== e.OMP_HERDSMAN_WORKSPACE_ID ||
+    state.agentLabel !== e.OMP_HERDSMAN_LABEL ||
     state.paneId !== e.HERDR_PANE_ID ||
-    state.ownerSessionId !== e.PI_HERDSMAN_OWNER_SESSION_ID ||
+    state.ownerSessionId !== e.OMP_HERDSMAN_OWNER_SESSION_ID ||
     state.piSessionId !== sessionId ||
     !sameSessionPath(state.piSessionFile, sessionFile) ||
     resolve(state.cwd) !== resolve(ctx.cwd) ||
-    state.runId !== e.PI_HERDSMAN_RUN_ID
+    state.runId !== e.OMP_HERDSMAN_RUN_ID
   )
     fail(
       "target_not_found",
@@ -1848,7 +1848,7 @@ function validateManagedAgentIdentity(
       "controller",
       {
         ids: {
-          label: e.PI_HERDSMAN_LABEL,
+          label: e.OMP_HERDSMAN_LABEL,
           paneId: e.HERDR_PANE_ID,
         },
       },
@@ -1880,8 +1880,8 @@ function validateAgentControllerIdentity(
   try {
     const identity = readAgentIdentity(ctx.sessionManager);
     if (
-      identity.definition !== e.PI_HERDSMAN_AGENT_DEFINITION ||
-      identity.label !== e.PI_HERDSMAN_LABEL
+      identity.definition !== e.OMP_HERDSMAN_AGENT_DEFINITION ||
+      identity.label !== e.OMP_HERDSMAN_LABEL
     )
       throw new Error("agent session identity does not match environment");
   } catch (error) {
@@ -2137,7 +2137,7 @@ function buildMetadataArgs(
     ) ?? runtime.label.slice(0, 80);
   const args = [
     "--source",
-    `pi-herdsman:${runtime.runId}`,
+    `omp-herdsman:${runtime.runId}`,
     "--title",
     title,
     "--display-agent",
@@ -2296,7 +2296,7 @@ function agentMetadataRuntime(
     label: state.agentLabel,
     paneId: state.paneId,
     runId: state.runId,
-    agentDefinition: process.env.PI_HERDSMAN_AGENT_DEFINITION!,
+    agentDefinition: process.env.OMP_HERDSMAN_AGENT_DEFINITION!,
     cwd: ctx.cwd,
   };
 }
@@ -2305,14 +2305,14 @@ function envManagedAgent(ctx: ExtensionContext): ManagedAgentState | undefined {
   if (managedAgentEnvironmentError()) return undefined;
   return {
     version: 4,
-    runId: e.PI_HERDSMAN_RUN_ID,
-    ownerSessionId: e.PI_HERDSMAN_OWNER_SESSION_ID,
-    workspaceId: e.PI_HERDSMAN_WORKSPACE_ID,
-    agentLabel: e.PI_HERDSMAN_LABEL,
+    runId: e.OMP_HERDSMAN_RUN_ID,
+    ownerSessionId: e.OMP_HERDSMAN_OWNER_SESSION_ID,
+    workspaceId: e.OMP_HERDSMAN_WORKSPACE_ID,
+    agentLabel: e.OMP_HERDSMAN_LABEL,
     paneId: e.HERDR_PANE_ID,
     piSessionId: ctx.sessionManager.getSessionId(),
     piSessionFile: ctx.sessionManager.getSessionFile(),
-    agentDefinition: e.PI_HERDSMAN_AGENT_DEFINITION,
+    agentDefinition: e.OMP_HERDSMAN_AGENT_DEFINITION,
     cwd: ctx.cwd,
     updatedAt: Date.now(),
   };
@@ -2999,12 +2999,12 @@ function statusBreadcrumb(
   if (!current)
     return [
       "?",
-      process.env.PI_HERDSMAN_AGENT_DEFINITION && process.env.PI_HERDSMAN_LABEL
+      process.env.OMP_HERDSMAN_AGENT_DEFINITION && process.env.OMP_HERDSMAN_LABEL
         ? displayIdentity(
-            process.env.PI_HERDSMAN_AGENT_DEFINITION,
-            process.env.PI_HERDSMAN_LABEL,
+            process.env.OMP_HERDSMAN_AGENT_DEFINITION,
+            process.env.OMP_HERDSMAN_LABEL,
           )
-        : (process.env.PI_HERDSMAN_AGENT_DEFINITION ?? "?"),
+        : (process.env.OMP_HERDSMAN_AGENT_DEFINITION ?? "?"),
     ];
 
   const definitions = [
@@ -3152,7 +3152,7 @@ function agentResultDetails(
       ? (record.message as Record<string, unknown>)
       : record;
 
-  if (message.customType !== "pi-herdsman-agent-result") return undefined;
+  if (message.customType !== "omp-herdsman-agent-result") return undefined;
 
   const details =
     message.details && typeof message.details === "object"
@@ -3390,7 +3390,7 @@ async function deliverResultUnsafe(
     ].join(" · ");
     pi.sendMessage(
       {
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         content: [
           completionHeader,
           ...(reusableResultRef ? [`Result ref: ${reusableResultRef}`] : []),
@@ -3572,7 +3572,7 @@ async function cleanupAfterDeliveredResult(
   signal?: AbortSignal,
 ): Promise<boolean> {
   let release: (() => void) | undefined;
-  const managedAgent = process.env.PI_HERDSMAN_MAILBOX !== undefined;
+  const managedAgent = process.env.OMP_HERDSMAN_MAILBOX !== undefined;
   try {
     if (managedAgent)
       release = claimDelegationLock(
@@ -3857,8 +3857,8 @@ function hasDeliveredAsk(entries: readonly unknown[], ask: AskRecord): boolean {
     const message = entry?.message;
     const details = entry?.details ?? message?.details;
     return (
-      (entry?.customType === "pi-herdsman-agent-ask" ||
-        message?.customType === "pi-herdsman-agent-ask") &&
+      (entry?.customType === "omp-herdsman-agent-ask" ||
+        message?.customType === "omp-herdsman-agent-ask") &&
       details?.askId === ask.askId &&
       details?.requestId === ask.requestId &&
       details?.runId === ask.runId &&
@@ -3900,7 +3900,7 @@ function deliverAskUnsafe(
   // Message failures are retryable, and ask.json remains the durable anchor.
   pi.sendMessage(
     {
-      customType: "pi-herdsman-agent-ask",
+      customType: "omp-herdsman-agent-ask",
       content: `Agent ${ask.agentLabel} needs your input:\n\n${ask.question}\n\nUse agent_reply with agent="${ask.agentLabel}" to answer this question.`,
       display: true,
       details: {
@@ -4814,7 +4814,7 @@ function delegationStatusForResult(
         state.workspaceId === runtime.workspaceId &&
         state.piSessionId === runtime.ownerSessionId,
     )?.state;
-    if (!parent && process.env.PI_HERDSMAN_MAILBOX !== undefined) return;
+    if (!parent && process.env.OMP_HERDSMAN_MAILBOX !== undefined) return;
     const controller =
       parent ??
       ({
@@ -5795,8 +5795,8 @@ async function actionUnsafe(
       definition: agentDefinition,
       ...(p.task !== undefined ? { task: p.task } : {}),
       startedAt: Date.now(),
-      ...(scope.kind === "managed-agent" && process.env.PI_HERDSMAN_LABEL
-        ? { parentLabel: process.env.PI_HERDSMAN_LABEL }
+      ...(scope.kind === "managed-agent" && process.env.OMP_HERDSMAN_LABEL
+        ? { parentLabel: process.env.OMP_HERDSMAN_LABEL }
         : {}),
     };
     pendingStarts?.set(label, pendingStart);
@@ -5823,14 +5823,14 @@ async function actionUnsafe(
         resetRelease();
       }
       const env = [
-        `PI_HERDSMAN_MAILBOX=${mailbox}`,
-        `PI_HERDSMAN_RUN_ID=${runId}`,
-        `PI_HERDSMAN_OWNER_SESSION_ID=${owner}`,
+        `OMP_HERDSMAN_MAILBOX=${mailbox}`,
+        `OMP_HERDSMAN_RUN_ID=${runId}`,
+        `OMP_HERDSMAN_OWNER_SESSION_ID=${owner}`,
         `PI_SUBAGENT_PARENT_SESSION=${forwardingSession}`,
-        `PI_HERDSMAN_LABEL=${label}`,
-        `PI_HERDSMAN_WORKSPACE_ID=${workspaceId}`,
-        `PI_HERDSMAN_AGENT_DEFINITION=${agentDefinition}`,
-        `PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=${JSON.stringify(
+        `OMP_HERDSMAN_LABEL=${label}`,
+        `OMP_HERDSMAN_WORKSPACE_ID=${workspaceId}`,
+        `OMP_HERDSMAN_AGENT_DEFINITION=${agentDefinition}`,
+        `OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=${JSON.stringify(
           delegationEnabled ? effectiveDefinition.frontmatter.agents : [],
         )}`,
         ...(process.env.PI_CODING_AGENT_DIR
@@ -6401,7 +6401,7 @@ async function action(
   )
     return actionUnsafe(pi, ctx, p, signal, scope, pendingStarts);
   const release = claimDelegationLock(
-    process.env.PI_HERDSMAN_WORKSPACE_ID!,
+    process.env.OMP_HERDSMAN_WORKSPACE_ID!,
     ctx.sessionManager.getSessionId(),
   );
   try {
@@ -6425,7 +6425,7 @@ export default function (pi: ExtensionAPI): void {
       });
   };
   const agentEnvError =
-    process.env.PI_HERDSMAN_MAILBOX !== undefined
+    process.env.OMP_HERDSMAN_MAILBOX !== undefined
       ? managedAgentEnvironmentError()
       : undefined;
   if (agentEnvError) {
@@ -6464,41 +6464,41 @@ export default function (pi: ExtensionAPI): void {
     renderHerdRunEntry(entry, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-stop-summary",
+    "omp-herdsman-stop-summary",
     (message, _options, theme) => renderStopSummary(message, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-agent-result",
+    "omp-herdsman-agent-result",
     (message, options, theme) =>
       renderCompletionMessage(message, options, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-agent-ask",
+    "omp-herdsman-agent-ask",
     (message, options, theme) => renderAgentAskMessage(message, options, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-agent-stale",
+    "omp-herdsman-agent-stale",
     (message, options, theme) =>
       renderAgentStaleMessage(message, options, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-agent-lost",
+    "omp-herdsman-agent-lost",
     (message, options, theme) =>
       renderAgentLostMessage(message, options, theme),
   );
   pi.registerMessageRenderer(
-    "pi-herdsman-agent-attention",
+    "omp-herdsman-agent-attention",
     (message, options, theme) =>
       renderAgentAttentionMessage(message, options, theme),
   );
   const processRole = role();
   if (processRole === "unmanaged") {
     const agentsCommand = {
-      description: "Show Pi Herdsman setup guidance",
+      description: "Show OMP Herdsman setup guidance",
       handler: async (_args: string, ctx: ExtensionCommandContext) => {
         if (!ctx.hasUI) return;
         ctx.ui.notify(
-          `Pi Herdsman v${HERDSMAN_VERSION} is inactive because this Pi session is not running inside Herdr.\n\nStart Herdr in this project, then run Pi in a Herdr pane:\n  herdr\n  pi\n\nIf needed, install the Pi integration once:\n  herdr integration install pi`,
+          `OMP Herdsman v${HERDSMAN_VERSION} is inactive because this Pi session is not running inside Herdr.\n\nStart Herdr in this project, then run Pi in a Herdr pane:\n  herdr\n  pi\n\nIf needed, install the Pi integration once:\n  herdr integration install pi`,
         );
       },
     };
@@ -6840,9 +6840,9 @@ export default function (pi: ExtensionAPI): void {
       "report-metadata",
       paneId,
       "--source",
-      "pi-herdsman:lead",
+      "omp-herdsman:lead",
       "--title",
-      mode === "active" ? "chief" : "Pi Herdsman lead",
+      mode === "active" ? "chief" : "OMP Herdsman lead",
       ...(mode === "active"
         ? ["--token", "pi_herdsman_role=chief"]
         : mode === "inactive"
@@ -6862,11 +6862,11 @@ export default function (pi: ExtensionAPI): void {
   };
   const persistRole = (role: "lead" | "chief"): void => {
     if (!leadTools) throw new Error("Lead tool baseline is unavailable");
-    pi.appendEntry("pi-herdsman-role", { role, leadTools: [...leadTools] });
+    pi.appendEntry("omp-herdsman-role", { role, leadTools: [...leadTools] });
   };
   const persistChiefState = (): boolean => {
     try {
-      pi.appendEntry("pi-herdsman-lead-state", {
+      pi.appendEntry("omp-herdsman-lead-state", {
         instanceId: leadInstanceId,
         ...(pendingChiefAsk ? { pendingAsk: pendingChiefAsk } : {}),
       });
@@ -7133,7 +7133,7 @@ export default function (pi: ExtensionAPI): void {
       .find(
         (candidate: any) =>
           candidate?.type === "custom" &&
-          candidate.customType === "pi-herdsman-lead-state",
+          candidate.customType === "omp-herdsman-lead-state",
       ) as any;
     let malformed = false;
     if (entry) {
@@ -7178,7 +7178,7 @@ export default function (pi: ExtensionAPI): void {
         pi,
         ctx,
         "pi_herdsman_state_error",
-        new Error("invalid pi-herdsman-lead-state entry"),
+        new Error("invalid omp-herdsman-lead-state entry"),
       );
       return;
     }
@@ -7189,7 +7189,7 @@ export default function (pi: ExtensionAPI): void {
       .getEntries()
       .some(
         (entry: any) =>
-          entry?.customType?.startsWith?.("pi-herdsman-") &&
+          entry?.customType?.startsWith?.("omp-herdsman-") &&
           entry?.details?.id === id,
       );
   const assertCurrentLeadCoordination = (ctx: ExtensionContext): void => {
@@ -8471,7 +8471,7 @@ export default function (pi: ExtensionAPI): void {
     clearNormalUI = () => {
       if (statusTimer) clearInterval(statusTimer);
       statusTimer = undefined;
-      if (statusContext) statusContext.ui.setWidget("pi-herdsman", undefined);
+      if (statusContext) statusContext.ui.setWidget("omp-herdsman", undefined);
       statusWidget?.dispose();
       statusWidget = undefined;
       requestStatusRefresh = undefined;
@@ -8481,7 +8481,7 @@ export default function (pi: ExtensionAPI): void {
       clearSupervisionUI?.();
       if (ctx.mode !== "tui" || !ctx.hasUI) return;
       try {
-        ctx.ui.setWidget("pi-herdsman-staff", (tui, _theme) => {
+        ctx.ui.setWidget("omp-herdsman-staff", (tui, _theme) => {
           requestSupervisionWidgetRender = () => tui.requestRender();
           return createSupervisionWidget(
             () => supervisionSnapshot.leads,
@@ -8503,7 +8503,7 @@ export default function (pi: ExtensionAPI): void {
       supervisionTimer = undefined;
       if (removeWidget) {
         try {
-          leadContext?.ui.setWidget("pi-herdsman-staff", undefined);
+          leadContext?.ui.setWidget("omp-herdsman-staff", undefined);
         } catch {
           // Widget teardown is best-effort during UI failure or shutdown.
         }
@@ -8645,8 +8645,8 @@ export default function (pi: ExtensionAPI): void {
                   theme.fg(
                     "accent",
                     status === "unavailable"
-                      ? "Pi Herdsman · unavailable"
-                      : `Pi Herdsman · ${leads.length} herd${leads.length === 1 ? "" : "s"}${status === "stale" ? " · stale" : ""}`,
+                      ? "OMP Herdsman · unavailable"
+                      : `OMP Herdsman · ${leads.length} herd${leads.length === 1 ? "" : "s"}${status === "stale" ? " · stale" : ""}`,
                   ),
                 ),
                 0,
@@ -8809,13 +8809,13 @@ export default function (pi: ExtensionAPI): void {
         ? ["herd"]
         : [
             "?",
-            process.env.PI_HERDSMAN_AGENT_DEFINITION &&
-            process.env.PI_HERDSMAN_LABEL
+            process.env.OMP_HERDSMAN_AGENT_DEFINITION &&
+            process.env.OMP_HERDSMAN_LABEL
               ? displayIdentity(
-                  process.env.PI_HERDSMAN_AGENT_DEFINITION,
-                  process.env.PI_HERDSMAN_LABEL,
+                  process.env.OMP_HERDSMAN_AGENT_DEFINITION,
+                  process.env.OMP_HERDSMAN_LABEL,
                 )
-              : (process.env.PI_HERDSMAN_AGENT_DEFINITION ?? "?"),
+              : (process.env.OMP_HERDSMAN_AGENT_DEFINITION ?? "?"),
           ];
     let ownTools: string[] | undefined;
     const ownToolsSnapshot = (): { ownTools?: string[] } =>
@@ -9616,8 +9616,8 @@ export default function (pi: ExtensionAPI): void {
     const presentStopSummary = (summary: string): void => {
       pi.sendMessage(
         {
-          customType: "pi-herdsman-stop-summary",
-          content: `[Pi Herdsman] Stop all result:\n${summary}`,
+          customType: "omp-herdsman-stop-summary",
+          content: `[OMP Herdsman] Stop all result:\n${summary}`,
           display: true,
           details: { summary },
         },
@@ -9662,7 +9662,7 @@ export default function (pi: ExtensionAPI): void {
         const definitions = (await contextAgentDefinitions(ctx)).definitions;
         const selected = await selectMenu(
           ctx,
-          `Pi Herdsman · v${HERDSMAN_VERSION}`,
+          `OMP Herdsman · v${HERDSMAN_VERSION}`,
           [
             { value: "running", label: `Running        ${running}` },
             {
@@ -10453,7 +10453,7 @@ export default function (pi: ExtensionAPI): void {
                 appendDurableError(
                   pi,
                   leadContext,
-                  "pi-herdsman_role_error",
+                  "omp-herdsman_role_error",
                   retryError,
                 );
               try {
@@ -10465,7 +10465,7 @@ export default function (pi: ExtensionAPI): void {
                   appendDurableError(
                     pi,
                     leadContext,
-                    "pi-herdsman_role_error",
+                    "omp-herdsman_role_error",
                     failClosedError,
                   );
               }
@@ -10776,7 +10776,7 @@ export default function (pi: ExtensionAPI): void {
         const closeAvailable = availableActions.includes("close");
         pi.sendMessage(
           {
-            customType: "pi-herdsman-agent-lost",
+            customType: "omp-herdsman-agent-lost",
             content: [
               `Agent ${current.agentLabel} is still lost and its assignment remains unresolved.`,
               ...(latestRequestId ? [`Request: ${latestRequestId}`] : []),
@@ -10874,7 +10874,7 @@ export default function (pi: ExtensionAPI): void {
             if (!ctx.isIdle()) continue;
             pi.sendMessage(
               {
-                customType: "pi-herdsman-agent-attention",
+                customType: "omp-herdsman-agent-attention",
                 content: [
                   `Agent ${current.agentLabel} could not persist its terminal result.`,
                   `Request: ${error.requestId}`,
@@ -10929,7 +10929,7 @@ export default function (pi: ExtensionAPI): void {
             if (!ctx.isIdle()) continue;
             pi.sendMessage(
               {
-                customType: "pi-herdsman-agent-attention",
+                customType: "omp-herdsman-agent-attention",
                 content: [
                   `Agent ${current.agentLabel} has unresolved physical identity.`,
                   `Available tools: ${availableActions.map((action) => `agent_${action}`).join(", ") || "none"}`,
@@ -10998,7 +10998,7 @@ export default function (pi: ExtensionAPI): void {
               if (!ctx.isIdle()) continue;
               pi.sendMessage(
                 {
-                  customType: "pi-herdsman-agent-ask",
+                  customType: "omp-herdsman-agent-ask",
                   content: [
                     `Agent ${currentAsk.agentLabel} is still waiting for your answer:`,
                     "",
@@ -11053,7 +11053,7 @@ export default function (pi: ExtensionAPI): void {
             if (!ctx.isIdle()) continue;
             pi.sendMessage(
               {
-                customType: "pi-herdsman-agent-attention",
+                customType: "omp-herdsman-agent-attention",
                 content: [
                   `Agent ${current.agentLabel} is blocked in its live runtime, but no Herdsman ask_owner question exists.`,
                   `Request: ${current.activeRequestId}`,
@@ -11118,7 +11118,7 @@ export default function (pi: ExtensionAPI): void {
               continue;
             pi.sendMessage(
               {
-                customType: "pi-herdsman-agent-attention",
+                customType: "omp-herdsman-agent-attention",
                 content: [
                   `Agent ${current.agentLabel} still has an unacknowledged ${currentRequest.kind} request.`,
                   `Request: ${currentRequest.requestId}`,
@@ -11301,7 +11301,7 @@ export default function (pi: ExtensionAPI): void {
             return;
           pi.sendMessage(
             {
-              customType: "pi-herdsman-agent-stale",
+              customType: "omp-herdsman-agent-stale",
               content: [
                 `Agent ${current.agentLabel} has had no qualifying execution progress for ${formatAttentionDuration(inactiveMs)}.`,
                 `Request: ${current.activeRequestId}`,
@@ -11404,7 +11404,7 @@ export default function (pi: ExtensionAPI): void {
       if (ctx.mode !== "tui" || !ctx.hasUI) return;
       const generation = ++statusGeneration;
       statusContext = ctx;
-      ctx.ui.setWidget("pi-herdsman", (tui, theme) => {
+      ctx.ui.setWidget("omp-herdsman", (tui, theme) => {
         const widget = createStatusWidget(() => tui.requestRender(), theme);
         if (controllerScope.kind === "managed-agent")
           widget.setSnapshot({
@@ -11527,7 +11527,7 @@ export default function (pi: ExtensionAPI): void {
       statusRefresh = false;
       statusInFlight = false;
       if (statusWidget) {
-        statusContext?.ui.setWidget("pi-herdsman", undefined);
+        statusContext?.ui.setWidget("omp-herdsman", undefined);
         statusWidget.dispose();
         statusWidget = undefined;
       }
@@ -11671,7 +11671,7 @@ export default function (pi: ExtensionAPI): void {
       statusRefresh = false;
       statusInFlight = false;
       if (statusWidget) {
-        statusContext?.ui.setWidget("pi-herdsman", undefined);
+        statusContext?.ui.setWidget("omp-herdsman", undefined);
         statusWidget.dispose();
         statusWidget = undefined;
       }
@@ -11768,7 +11768,7 @@ export default function (pi: ExtensionAPI): void {
             try {
               pi.sendMessage(
                 {
-                  customType: "pi-herdsman-delegation-guidance",
+                  customType: "omp-herdsman-delegation-guidance",
                   content: `${AGENT_EXECUTION_OWNERSHIP_GUIDANCE} ${AGENT_UNRESOLVED_GUIDANCE}`,
                   display: false,
                 },
@@ -12212,7 +12212,7 @@ export default function (pi: ExtensionAPI): void {
     update: (current: ManagedAgentState) => ManagedAgentState,
   ): ManagedAgentState | undefined => {
     if (!state) return undefined;
-    const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+    const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
     const release = tryClaimAssignmentLock(mailbox);
     if (!release) return undefined;
     try {
@@ -12264,7 +12264,7 @@ export default function (pi: ExtensionAPI): void {
     if (leafStatusTimer) clearInterval(leafStatusTimer);
     leafStatusTimer = undefined;
     if (leafStatusWidget) {
-      leafStatusContext?.ui.setWidget("pi-herdsman", undefined);
+      leafStatusContext?.ui.setWidget("omp-herdsman", undefined);
       leafStatusWidget.dispose();
       leafStatusWidget = undefined;
     }
@@ -12309,13 +12309,13 @@ export default function (pi: ExtensionAPI): void {
           unavailable: true,
           breadcrumb: lastLeafBreadcrumb ?? [
             "?",
-            process.env.PI_HERDSMAN_AGENT_DEFINITION &&
-            process.env.PI_HERDSMAN_LABEL
+            process.env.OMP_HERDSMAN_AGENT_DEFINITION &&
+            process.env.OMP_HERDSMAN_LABEL
               ? displayIdentity(
-                  process.env.PI_HERDSMAN_AGENT_DEFINITION,
-                  process.env.PI_HERDSMAN_LABEL,
+                  process.env.OMP_HERDSMAN_AGENT_DEFINITION,
+                  process.env.OMP_HERDSMAN_LABEL,
                 )
-              : (process.env.PI_HERDSMAN_AGENT_DEFINITION ?? "?"),
+              : (process.env.OMP_HERDSMAN_AGENT_DEFINITION ?? "?"),
           ],
           ...ownToolsSnapshot(),
           identityOnly: true,
@@ -12362,7 +12362,7 @@ export default function (pi: ExtensionAPI): void {
     message?: string,
   ): void => {
     if (!state) return;
-    const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+    const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
     const release = tryClaimAssignmentLock(mailbox);
     if (!release) return;
     try {
@@ -12393,7 +12393,7 @@ export default function (pi: ExtensionAPI): void {
     if (!initialized || !state) return;
     try {
       const request = readUnacknowledgedRequest(
-        process.env.PI_HERDSMAN_MAILBOX!,
+        process.env.OMP_HERDSMAN_MAILBOX!,
         state,
       );
       if (!request) {
@@ -12423,7 +12423,7 @@ export default function (pi: ExtensionAPI): void {
     !state.completedRequestId &&
     !pendingResult &&
     !pendingStateTransition &&
-    !unacknowledgedRequestExists(process.env.PI_HERDSMAN_MAILBOX!, state) &&
+    !unacknowledgedRequestExists(process.env.OMP_HERDSMAN_MAILBOX!, state) &&
     allDirectChildrenAskBlocked(state);
   const askRejectionReason = (): string => {
     if (!state?.activeRequestId) return "no active assignment";
@@ -12431,7 +12431,7 @@ export default function (pi: ExtensionAPI): void {
     if (state.completedRequestId || pendingResult)
       return "assignment is settling";
     if (pendingStateTransition) return "assignment state is settling";
-    if (unacknowledgedRequestExists(process.env.PI_HERDSMAN_MAILBOX!, state))
+    if (unacknowledgedRequestExists(process.env.OMP_HERDSMAN_MAILBOX!, state))
       return "a control request is still pending";
     if (!allDirectChildrenAskBlocked(state))
       return "direct agent work is still active";
@@ -12512,7 +12512,7 @@ export default function (pi: ExtensionAPI): void {
           `Mailbox payload is ${askBytes} bytes; configured limit is ${limits.mailbox.bytes} bytes`,
           "ask_owner",
         );
-      const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+      const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
       const release = claimAssignmentLock(mailbox, "ask_owner", {
         label: state.agentLabel,
         paneId: state.paneId,
@@ -12613,10 +12613,10 @@ export default function (pi: ExtensionAPI): void {
       ensureAgentIdentity(
         pi,
         ctx,
-        process.env.PI_HERDSMAN_AGENT_DEFINITION!,
-        process.env.PI_HERDSMAN_LABEL!,
+        process.env.OMP_HERDSMAN_AGENT_DEFINITION!,
+        process.env.OMP_HERDSMAN_LABEL!,
       );
-      const existing = readAgentState(process.env.PI_HERDSMAN_MAILBOX!);
+      const existing = readAgentState(process.env.OMP_HERDSMAN_MAILBOX!);
       if (existing && !sameManagedAgentIdentity(existing, candidate)) {
         throw new Error("agent session identity changed while state existed");
       }
@@ -12627,7 +12627,7 @@ export default function (pi: ExtensionAPI): void {
         if (state.activeRequestId && !state.pendingAskId) {
           try {
             const result = readResult(
-              process.env.PI_HERDSMAN_MAILBOX!,
+              process.env.OMP_HERDSMAN_MAILBOX!,
               state.activeRequestId,
             );
             if (
@@ -12664,11 +12664,11 @@ export default function (pi: ExtensionAPI): void {
         const { definitions } = await contextAgentDefinitions(ctx);
         const definition = definitions.find(
           (candidate) =>
-            candidate.name === process.env.PI_HERDSMAN_AGENT_DEFINITION,
+            candidate.name === process.env.OMP_HERDSMAN_AGENT_DEFINITION,
         );
         if (!definition)
           throw new Error(
-            `agent ${process.env.PI_HERDSMAN_AGENT_DEFINITION} not found`,
+            `agent ${process.env.OMP_HERDSMAN_AGENT_DEFINITION} not found`,
           );
         if (!agentDefinitionEnabled(definition))
           throw new Error(
@@ -12676,7 +12676,7 @@ export default function (pi: ExtensionAPI): void {
           );
         validateAgentDefinitionReferences(definition, definitions);
       }
-      const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+      const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
       const release = claimAssignmentLock(mailbox, "session_start", {
         label: state.agentLabel,
         paneId: state.paneId,
@@ -12719,7 +12719,7 @@ export default function (pi: ExtensionAPI): void {
       if (!delegationEnabled && ctx.mode === "tui" && ctx.hasUI) {
         const generation = leafStatusGeneration;
         leafStatusContext = ctx;
-        ctx.ui.setWidget("pi-herdsman", (tui, theme) => {
+        ctx.ui.setWidget("omp-herdsman", (tui, theme) => {
           const widget = createStatusWidget(() => tui.requestRender(), theme);
           widget.setSnapshot({
             agents: [],
@@ -12727,13 +12727,13 @@ export default function (pi: ExtensionAPI): void {
             unavailable: true,
             breadcrumb: [
               "?",
-              process.env.PI_HERDSMAN_AGENT_DEFINITION &&
-              process.env.PI_HERDSMAN_LABEL
+              process.env.OMP_HERDSMAN_AGENT_DEFINITION &&
+              process.env.OMP_HERDSMAN_LABEL
                 ? displayIdentity(
-                    process.env.PI_HERDSMAN_AGENT_DEFINITION,
-                    process.env.PI_HERDSMAN_LABEL,
+                    process.env.OMP_HERDSMAN_AGENT_DEFINITION,
+                    process.env.OMP_HERDSMAN_LABEL,
                   )
-                : (process.env.PI_HERDSMAN_AGENT_DEFINITION ?? "?"),
+                : (process.env.OMP_HERDSMAN_AGENT_DEFINITION ?? "?"),
             ],
             ...ownToolsSnapshot(),
             identityOnly: true,
@@ -12782,7 +12782,7 @@ export default function (pi: ExtensionAPI): void {
     if (!id) return { action: "handled" };
     let request: RequestRecord | undefined;
     try {
-      request = readRequest(process.env.PI_HERDSMAN_MAILBOX!, id);
+      request = readRequest(process.env.OMP_HERDSMAN_MAILBOX!, id);
     } catch {
       acknowledgeAndDiscard(
         id,
@@ -12819,7 +12819,7 @@ export default function (pi: ExtensionAPI): void {
     if (request.kind === "reply") {
       let ask: AskRecord | undefined;
       try {
-        ask = readPendingAsk(process.env.PI_HERDSMAN_MAILBOX!, state);
+        ask = readPendingAsk(process.env.OMP_HERDSMAN_MAILBOX!, state);
       } catch (error) {
         appendDurableError(pi, ctx, "pi_herdsman_state_error", error);
         acknowledgeAndDiscard(
@@ -12864,7 +12864,7 @@ export default function (pi: ExtensionAPI): void {
         },
         updatedAt: Date.now(),
       };
-      const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+      const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
       const release = tryClaimAssignmentLock(mailbox);
       if (!release) return { action: "handled" };
       try {
@@ -13106,7 +13106,7 @@ export default function (pi: ExtensionAPI): void {
     let release: (() => void) | undefined;
     try {
       if (!assignmentLockHeld) {
-        release = tryClaimAssignmentLock(process.env.PI_HERDSMAN_MAILBOX!);
+        release = tryClaimAssignmentLock(process.env.OMP_HERDSMAN_MAILBOX!);
         if (!release) {
           if (!stateRetryTimer)
             stateRetryTimer = setInterval(
@@ -13116,7 +13116,7 @@ export default function (pi: ExtensionAPI): void {
           return;
         }
       }
-      const current = readAgentState(process.env.PI_HERDSMAN_MAILBOX!);
+      const current = readAgentState(process.env.OMP_HERDSMAN_MAILBOX!);
       if (
         !current ||
         !sameManagedAgentIdentity(current, state) ||
@@ -13134,7 +13134,7 @@ export default function (pi: ExtensionAPI): void {
         lastActivityAt: undefined,
         updatedAt: Date.now(),
       };
-      writeAgentState(process.env.PI_HERDSMAN_MAILBOX!, nextState);
+      writeAgentState(process.env.OMP_HERDSMAN_MAILBOX!, nextState);
       state = nextState;
       agentStartedAt = undefined;
       const model = ctx.model
@@ -13202,7 +13202,7 @@ export default function (pi: ExtensionAPI): void {
     const flush = (assignmentLockHeld = false) => {
       const current = pendingResult;
       if (!current) return;
-      const mailbox = process.env.PI_HERDSMAN_MAILBOX!;
+      const mailbox = process.env.OMP_HERDSMAN_MAILBOX!;
       let release: (() => void) | undefined;
       try {
         if (!assignmentLockHeld) {
@@ -13272,7 +13272,7 @@ export default function (pi: ExtensionAPI): void {
               resultError: recovery,
               updatedAt: Date.now(),
             };
-            writeAgentState(process.env.PI_HERDSMAN_MAILBOX!, nextState);
+            writeAgentState(process.env.OMP_HERDSMAN_MAILBOX!, nextState);
             state = nextState;
             pendingResult = undefined;
             if (retryTimer) clearInterval(retryTimer);

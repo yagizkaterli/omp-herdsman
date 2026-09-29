@@ -245,7 +245,7 @@ test("coordination failure withdraws peer presence and recovery republishes a fr
     let leadStateAttempts = 0;
     let rollbackObservedWithdrawal = false;
     pi.pi.appendEntry = (customType: string, data: unknown) => {
-      if (customType === "pi-herdsman-lead-state") {
+      if (customType === "omp-herdsman-lead-state") {
         leadStateAttempts++;
         if (leadStateAttempts === 1)
           throw new Error("injected lead coordination failure");
@@ -661,7 +661,7 @@ test("Chief shutdown releases its lease when ordinary tool restoration fails", a
   assert.ok(
     entries.some(
       (entry: any) =>
-        entry.customType === "pi-herdsman-role" && entry.data.role === "chief",
+        entry.customType === "omp-herdsman-role" && entry.data.role === "chief",
     ),
   );
   const lease = claimChiefLease({
@@ -801,7 +801,7 @@ test("selecting a historical Chief branch activates its lease and staff tools", 
     const chiefBranch = [
       {
         type: "custom",
-        customType: "pi-herdsman-role",
+        customType: "omp-herdsman-role",
         data: { role: "chief", leadTools: baseline },
       },
     ];
@@ -855,7 +855,7 @@ test("malformed selected branch withdraws stale Chief authority", async () => {
     context.sessionManager.getBranch = () => [
       {
         type: "custom",
-        customType: "pi-herdsman-role",
+        customType: "omp-herdsman-role",
         data: { role: "chief" },
       },
     ];
@@ -924,7 +924,7 @@ test("manual chief leave completes lead cleanup when tool restoration fails", as
   ]);
   assert.deepEqual(
     entries
-      .filter((entry: any) => entry.customType === "pi-herdsman-role")
+      .filter((entry: any) => entry.customType === "omp-herdsman-role")
       .at(-1)?.data,
     { role: "lead", leadTools: baseline },
   );
@@ -985,7 +985,7 @@ test("lead session-start retries an exact baseline after restoration fails", asy
   ];
   entries.push({
     type: "custom",
-    customType: "pi-herdsman-role",
+    customType: "omp-herdsman-role",
     data: { role: "lead", leadTools: baseline },
   });
   const setActiveTools = pi.pi.setActiveTools;
@@ -1037,7 +1037,7 @@ test("lead session-start continues when chief lease release fails", async () => 
   await pi.commandOptions.get("chief").handler("", context);
   entries.push({
     type: "custom",
-    customType: "pi-herdsman-role",
+    customType: "omp-herdsman-role",
     data: {
       role: "lead",
       leadTools: [
@@ -1143,11 +1143,11 @@ test("lead agents command uses native completion and exact human grammar", async
   registerExtension!(pi.pi as never);
   assert.deepEqual(
     pi.entryRenderers.map((entry) => entry.customType),
-    ["pi-herdsman-agent-definitions", "pi-herdsman-herd-run"],
+    ["omp-herdsman-agent-definitions", "omp-herdsman-herd-run"],
   );
   assert.ok(
     pi.messageRenderers.some(
-      (message) => message.customType === "pi-herdsman-stop-summary",
+      (message) => message.customType === "omp-herdsman-stop-summary",
     ),
   );
   const command = pi.commandOptions.get("agents");
@@ -1192,7 +1192,7 @@ test("lead agents command uses native completion and exact human grammar", async
 test("/agents placement subtree writes flat config outside project settings", async () => {
   setLeadEnvironment();
   const projectRoot = join(PI_AGENT_ROOT, "placement-project");
-  const configPath = join(PI_AGENT_ROOT, "pi-herdsman", "config.json");
+  const configPath = join(PI_AGENT_ROOT, "omp-herdsman", "config.json");
   realFs.mkdirSync(join(projectRoot, ".pi"), { recursive: true });
   const pi = fakePi();
   registerExtension!(pi.pi as never);
@@ -1211,7 +1211,7 @@ test("/agents placement subtree writes flat config outside project settings", as
     );
   } finally {
     realFs.rmSync(projectRoot, { recursive: true, force: true });
-    realFs.rmSync(join(PI_AGENT_ROOT, "pi-herdsman"), {
+    realFs.rmSync(join(PI_AGENT_ROOT, "omp-herdsman"), {
       recursive: true,
       force: true,
     });
@@ -1355,8 +1355,8 @@ test("Chief activation replaces the lead widget and overview selection is intera
     "staff_message",
     "staff_reply",
   ]);
-  assert.ok(widgetKeys.includes("pi-herdsman"));
-  assert.ok(widgetKeys.includes("pi-herdsman-staff"));
+  assert.ok(widgetKeys.includes("omp-herdsman"));
+  assert.ok(widgetKeys.includes("omp-herdsman-staff"));
   assert.equal(
     pi.commandOptions.get("chief").description,
     "Activate chief mode, or open its overview when already active",
@@ -1372,7 +1372,7 @@ test("Chief activation replaces the lead widget and overview selection is intera
   ]);
   assert.equal(customCalls, 1);
   assert.ok(overview);
-  assert.match(overview.render(120).join("\n"), /Pi Herdsman ·/);
+  assert.match(overview.render(120).join("\n"), /OMP Herdsman ·/);
   assert.doesNotMatch(overview.render(120).join("\n"), /Pi Chief/);
   assert.doesNotMatch(overview.render(120).join("\n"), /├─|└─/);
   await new Promise<void>((resolve) => setImmediate(resolve));
@@ -1408,7 +1408,7 @@ test("Chief activation replaces the lead widget and overview selection is intera
   assert.equal(
     entries.some(
       (entry: any) =>
-        entry.customType === "pi-herdsman-role" && entry.data.role === "lead",
+        entry.customType === "omp-herdsman-role" && entry.data.role === "lead",
     ),
     false,
   );
@@ -1489,7 +1489,7 @@ test("Lead resume repairs stale staff from its durable displaced loadout", async
   await pi.commandOptions.get("chief").handler("leave", context);
   assert.deepEqual(pi.pi.getActiveTools(), ordinaryTools);
   const role = entries
-    .filter((entry: any) => entry.customType === "pi-herdsman-role")
+    .filter((entry: any) => entry.customType === "omp-herdsman-role")
     .at(-1) as any;
   assert.deepEqual(role.data, { role: "lead", leadTools: ordinaryTools });
 
@@ -1520,7 +1520,7 @@ test("ordinary branch tool state wins over an older lead checkpoint", async () =
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "lead",
         leadTools: [
@@ -1640,7 +1640,7 @@ async function openChiefOverview(
   const widgetRegistrations: Array<{ key: string; content: unknown }> = [];
   context.ui = {
     setWidget: (key: string, content: unknown) => {
-      if (options.failSetWidget && key === "pi-herdsman-staff")
+      if (options.failSetWidget && key === "omp-herdsman-staff")
         throw new Error("widget registration failed");
       widgetRegistrations.push({ key, content });
       if (content !== undefined) assert.equal(typeof content, "function");
@@ -1729,7 +1729,7 @@ test("registered chief widget obeys registration, refresh, and teardown contract
     });
     const registrations = harness.widgetRegistrations.filter(
       ({ key, content }) =>
-        key === "pi-herdsman-staff" && content !== undefined,
+        key === "omp-herdsman-staff" && content !== undefined,
     );
     assert.equal(registrations.length, 1);
     assert.equal(typeof registrations[0].content, "function");
@@ -1742,14 +1742,14 @@ test("registered chief widget obeys registration, refresh, and teardown contract
     assert.equal(
       harness.widgetRegistrations.filter(
         ({ key, content }) =>
-          key === "pi-herdsman-staff" && content !== undefined,
+          key === "omp-herdsman-staff" && content !== undefined,
       ).length,
       1,
     );
     await harness.cleanup();
     const teardown = harness.widgetRegistrations.filter(
       ({ key, content }) =>
-        key === "pi-herdsman-staff" && content === undefined,
+        key === "omp-herdsman-staff" && content === undefined,
     );
     assert.ok(teardown.length > 0);
     assert.equal(teardown.at(-1)?.content, undefined);
@@ -1773,7 +1773,7 @@ test("Chief overview reports unavailable when its first refresh fails", async ()
   });
   try {
     const output = harness.component.render(120).join("\n");
-    assert.match(output, /Pi Herdsman · unavailable/);
+    assert.match(output, /OMP Herdsman · unavailable/);
     assert.doesNotMatch(output, /0 herds/);
   } finally {
     await harness.cleanup();
@@ -1899,7 +1899,7 @@ test("Chief resume rejects a persisted pending chief ask without activation", as
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: [
@@ -1921,7 +1921,7 @@ test("Chief resume rejects a persisted pending chief ask without activation", as
     },
     {
       type: "custom",
-      customType: "pi-herdsman-lead-state",
+      customType: "omp-herdsman-lead-state",
       data: {
         pendingAsk: {
           askId: "11111111-1111-4111-8111-111111111111",
@@ -1971,7 +1971,7 @@ test("Chief resume rejects a persisted pending chief ask without activation", as
   assert.equal(
     entries.some(
       (entry: any) =>
-        entry.customType === "pi-herdsman-role" && entry.data.role === "chief",
+        entry.customType === "omp-herdsman-role" && entry.data.role === "chief",
     ),
     true,
   );
@@ -1997,7 +1997,7 @@ test("persisted chief resume isolates tools and restores its ordinary baseline",
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: [
@@ -2083,7 +2083,7 @@ test("persisted chief collision is suspended and has no lead authority", async (
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: [
@@ -2191,7 +2191,7 @@ test("plain agents opens the native management menu", async () => {
     return undefined;
   };
   await command.handler("", context);
-  assert.equal(prompts[0]?.label, `Pi Herdsman · v${packageMetadata.version}`);
+  assert.equal(prompts[0]?.label, `OMP Herdsman · v${packageMetadata.version}`);
   assert.deepEqual(
     prompts[0]?.options.map((option) => option.replace(/\s+.*/u, "")),
     ["Running", "Definitions", "Layout", "Context", "Message", "Stop"],
@@ -2237,7 +2237,7 @@ test("agents TUI selectors use stable values and current preselection", async ()
     await pi.commandOptions.get("agents").handler("", context);
     assert.ok(
       renders[0]?.some((line) =>
-        line.includes(`Pi Herdsman · v${packageMetadata.version}`),
+        line.includes(`OMP Herdsman · v${packageMetadata.version}`),
       ),
     );
     assert.ok(
@@ -2758,7 +2758,7 @@ test("Running excludes lost and unknown durable generations", async () => {
   context.ui.notify = (message: string) => notices.push(message);
   context.ui.select = async (label: string, options: string[]) => {
     prompts.push({ label, options });
-    assert.equal(label, `Pi Herdsman · v${packageMetadata.version}`);
+    assert.equal(label, `OMP Herdsman · v${packageMetadata.version}`);
     assert.ok(options.includes("Running        1 unknown · 1 lost"));
     return prompts.length === 1
       ? options.find((option) => option.startsWith("Running"))
@@ -2769,8 +2769,8 @@ test("Running excludes lost and unknown durable generations", async () => {
     assert.deepEqual(
       prompts.map(({ label }) => label),
       [
-        `Pi Herdsman · v${packageMetadata.version}`,
-        `Pi Herdsman · v${packageMetadata.version}`,
+        `OMP Herdsman · v${packageMetadata.version}`,
+        `OMP Herdsman · v${packageMetadata.version}`,
       ],
     );
     assert.ok(notices.some((message) => message.includes("No running agents")));
@@ -2944,7 +2944,7 @@ test("Running keeps colliding display labels distinct and focuses the selected p
       entries: [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: states[index]!.identity.piSessionId,
             definition: states[index]!.definition,
@@ -3187,7 +3187,7 @@ test("Definitions Details snapshots effective append and replace instructions", 
       entry: [...pi.entries.slice(initialEntryCount)]
         .reverse()
         .find(
-          (entry: any) => entry?.customType === "pi-herdsman-agent-definitions",
+          (entry: any) => entry?.customType === "omp-herdsman-agent-definitions",
         ) as
         | {
             customType: string;
@@ -3721,13 +3721,13 @@ test("lead agents stop reports an empty owned inventory safely", async () => {
   await command.handler("stop", context);
   assert.equal(
     pi.sentMessageCalls.filter(
-      (call: any) => call.message.customType === "pi-herdsman-stop-summary",
+      (call: any) => call.message.customType === "omp-herdsman-stop-summary",
     ).length,
     2,
   );
   assert.equal(
     pi.entries.some(
-      (entry: any) => entry.customType === "pi-herdsman-stop-summary",
+      (entry: any) => entry.customType === "omp-herdsman-stop-summary",
     ),
     false,
   );
@@ -3738,22 +3738,22 @@ test("lead agents stop closes a direct subtree agents-first", async () => {
   setLeadEnvironment();
   const parent = {
     ...managedState(
-      "pi-herdsman-parent",
+      "omp-herdsman-parent",
       undefined,
-      recoveryIdentity("pi-herdsman-parent"),
+      recoveryIdentity("omp-herdsman-parent"),
     ),
     piSessionId: PARENT_SESSION_ID,
-    piSessionFile: "/tmp/pi-herdsman-parent.jsonl",
+    piSessionFile: "/tmp/omp-herdsman-parent.jsonl",
   };
   const agents = {
     ...managedState(
-      "pi-herdsman-agents",
+      "omp-herdsman-agents",
       undefined,
-      recoveryIdentity("pi-herdsman-agents"),
+      recoveryIdentity("omp-herdsman-agents"),
     ),
     ownerSessionId: parent.piSessionId,
     piSessionId: CHILD_SESSION_ID,
-    piSessionFile: "/tmp/pi-herdsman-agents.jsonl",
+    piSessionFile: "/tmp/omp-herdsman-agents.jsonl",
   };
   const parentMailbox = agentMailboxPath(WORKSPACE, parent.agentLabel);
   const childMailbox = agentMailboxPath(WORKSPACE, agents.agentLabel);
@@ -3766,7 +3766,7 @@ test("lead agents stop closes a direct subtree agents-first", async () => {
       entries: [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: state.piSessionId,
             definition: "agent",
@@ -3792,19 +3792,19 @@ test("lead agents stop closes a direct subtree agents-first", async () => {
       parent.agentLabel,
     ]);
     assert.match(stopSummary(pi), /Stopped 2 agents/);
-    assert.match(stopSummary(pi), /✓ pi-herdsman-agents/);
-    assert.match(stopSummary(pi), /✓ pi-herdsman-parent/);
+    assert.match(stopSummary(pi), /✓ omp-herdsman-agents/);
+    assert.match(stopSummary(pi), /✓ omp-herdsman-parent/);
     assert.equal(pi.sentMessageCalls.length, 1);
     assert.deepEqual(pi.sentMessageCalls[0]?.options, { triggerTurn: false });
     assert.equal(pi.sentMessageCalls[0]?.message.display, true);
     assert.equal(
       pi.sentMessageCalls[0]?.message.content,
-      `[Pi Herdsman] Stop all result:\n${stopSummary(pi)}`,
+      `[OMP Herdsman] Stop all result:\n${stopSummary(pi)}`,
     );
     assert.ok(
       pi.entries.some(
         (entry: any) =>
-          entry.customType === "pi-herdsman-stop-summary" &&
+          entry.customType === "omp-herdsman-stop-summary" &&
           entry.details.summary === stopSummary(pi),
       ),
     );
@@ -3822,9 +3822,9 @@ test("lead agents stop closes a direct subtree agents-first", async () => {
 test("lead agents stop refuses an agent whose identity changes after inventory", async () => {
   setLeadEnvironment();
   const agent = managedState(
-    "pi-herdsman-identity-race",
+    "omp-herdsman-identity-race",
     undefined,
-    recoveryIdentity("pi-herdsman-identity-race"),
+    recoveryIdentity("omp-herdsman-identity-race"),
   );
   const mailbox = agentMailboxPath(WORKSPACE, agent.agentLabel);
   resetAgentMailbox(mailbox);
@@ -4324,7 +4324,7 @@ test("TUI status refresh consumes the coherent Herdr session snapshot", async (t
   const label = "sleep-smoke-a";
   const identity = {
     ...recoveryIdentity(label),
-    piSessionFile: join(tmpdir(), `pi-herdsman-${label}-${randomUUID()}.jsonl`),
+    piSessionFile: join(tmpdir(), `omp-herdsman-${label}-${randomUUID()}.jsonl`),
   };
   realFs.writeFileSync(identity.piSessionFile, "{}", "utf8");
   t.after(() => realFs.rmSync(identity.piSessionFile, { force: true }));
@@ -4517,7 +4517,7 @@ test("zero-runtime reconciliation requests one status refresh", async (t) => {
   const label = "fresh-widget-agent";
   const identity = {
     ...recoveryIdentity(label),
-    piSessionFile: join(tmpdir(), `pi-herdsman-${label}-${randomUUID()}.jsonl`),
+    piSessionFile: join(tmpdir(), `omp-herdsman-${label}-${randomUUID()}.jsonl`),
   };
   realFs.writeFileSync(identity.piSessionFile, "{}", "utf8");
   t.after(() => realFs.rmSync(identity.piSessionFile, { force: true }));
@@ -4647,7 +4647,7 @@ test("fresh assignment refreshes the widget after validation", async (t) => {
   const label = "fresh-start-widget-agent";
   const sessionPath = join(
     tmpdir(),
-    `pi-herdsman-${label}-${randomUUID()}.jsonl`,
+    `omp-herdsman-${label}-${randomUUID()}.jsonl`,
   );
   realFs.writeFileSync(sessionPath, "{}", "utf8");
   const mailbox = agentMailboxPath(WORKSPACE, label);
@@ -4773,9 +4773,9 @@ test("fresh assignment refreshes the widget after validation", async (t) => {
             .slice(0, -1)
             .find((arg) => arg.startsWith(`${key}=`))
             ?.slice(key.length + 1);
-        startedRunId = value("PI_HERDSMAN_RUN_ID") ?? startedRunId;
+        startedRunId = value("OMP_HERDSMAN_RUN_ID") ?? startedRunId;
         startedOwnerSessionId =
-          value("PI_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
+          value("OMP_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
         herdrAgent.name = runScopedHerdrAlias(WORKSPACE, label, startedRunId);
         return {
           stdout: JSON.stringify({
@@ -4832,9 +4832,9 @@ test("fresh assignment refreshes the widget after validation", async (t) => {
             .slice(0, -1)
             .find((arg) => arg.startsWith(`${key}=`))
             ?.slice(key.length + 1);
-        startedRunId = value("PI_HERDSMAN_RUN_ID") ?? startedRunId;
+        startedRunId = value("OMP_HERDSMAN_RUN_ID") ?? startedRunId;
         startedOwnerSessionId =
-          value("PI_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
+          value("OMP_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
         herdrAgent.name = runScopedHerdrAlias(WORKSPACE, label, startedRunId);
         return {
           stdout: JSON.stringify({
@@ -4858,9 +4858,9 @@ test("fresh assignment refreshes the widget after validation", async (t) => {
         if (args[1] === "run") {
           const value = (key: string) =>
             new RegExp(`${key}='([^']*)'`).exec(args.at(-1) ?? "")?.[1];
-          startedRunId = value("PI_HERDSMAN_RUN_ID") ?? startedRunId;
+          startedRunId = value("OMP_HERDSMAN_RUN_ID") ?? startedRunId;
           startedOwnerSessionId =
-            value("PI_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
+            value("OMP_HERDSMAN_OWNER_SESSION_ID") ?? startedOwnerSessionId;
           herdrAgent.name = runScopedHerdrAlias(WORKSPACE, label, startedRunId);
         }
         return { stdout: "{}", stderr: "", code: 0 };

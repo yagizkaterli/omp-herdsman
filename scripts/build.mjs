@@ -17,9 +17,9 @@ await build({
   target: "node22",
   sourcemap: true,
   external: [
-    "@earendil-works/pi-ai",
-    "@earendil-works/pi-coding-agent",
-    "@earendil-works/pi-tui",
+    "@oh-my-pi/pi-ai",
+    "@oh-my-pi/pi-coding-agent",
+    "@oh-my-pi/pi-tui",
     "typebox",
   ],
 });

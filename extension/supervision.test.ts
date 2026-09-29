@@ -657,7 +657,7 @@ test("ask correlation ignores ephemeral lead instance IDs", () => {
 test("lead role state requires a canonical durable tool baseline", () => {
   const valid = {
     type: "custom",
-    customType: "pi-herdsman-role",
+    customType: "omp-herdsman-role",
     data: { role: "lead", leadTools: ["read", "bash", "agent", "chief"] },
   };
   assert.equal(sessionLeadRoleState([]), undefined);
@@ -684,7 +684,7 @@ test("lead role state requires a canonical durable tool baseline", () => {
     const malformed = { ...valid, data };
     assert.throws(
       () => sessionLeadRoleState([valid, malformed]),
-      /invalid pi-herdsman-role/,
+      /invalid omp-herdsman-role/,
     );
     assert.deepEqual(sessionLeadRoleState([malformed, valid]), valid.data);
   }
@@ -803,7 +803,7 @@ test("supervision presentation preserves provenance and naming fallbacks", () =>
       [
         "workspace",
         {
-          repoName: "pi-herdsman",
+          repoName: "omp-herdsman",
           branch: "feat/supervision",
           workspaceLabel: "wrong-workspace-label",
         },
@@ -812,7 +812,7 @@ test("supervision presentation preserves provenance and naming fallbacks", () =>
   });
   assert.equal(
     snapshot.leads.find((lead) => lead.lead === namedSession)!.displayName,
-    "pi-herdsman/feat/supervision/pi-session",
+    "omp-herdsman/feat/supervision/pi-session",
   );
   assert.equal(
     snapshot.leads.some((lead) =>
@@ -829,8 +829,8 @@ test("supervision presentation preserves provenance and naming fallbacks", () =>
       .filter((lead) => lead.lead !== namedSession)
       .map((lead) => lead.displayName),
     [
-      "pi-herdsman/feat/supervision/lead-22222222",
-      "pi-herdsman/feat/supervision/lead-33333333",
+      "omp-herdsman/feat/supervision/lead-22222222",
+      "omp-herdsman/feat/supervision/lead-33333333",
     ],
   );
   {

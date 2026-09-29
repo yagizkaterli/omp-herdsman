@@ -6,9 +6,9 @@ import {
   truncateHead,
   truncateLine,
   truncateTail,
-} from "@earendil-works/pi-coding-agent";
-import { contentText } from "@earendil-works/pi-ai";
-import * as PiTui from "@earendil-works/pi-tui";
+} from "@oh-my-pi/pi-coding-agent";
+import { contentText } from "@oh-my-pi/pi-ai";
+import * as PiTui from "@oh-my-pi/pi-tui";
 import {
   Container,
   Markdown,
@@ -16,8 +16,8 @@ import {
   Text,
   truncateToWidth,
   visibleWidth,
-} from "@earendil-works/pi-tui";
-import type { Box as TuiBox, Component } from "@earendil-works/pi-tui";
+} from "@oh-my-pi/pi-tui";
+import type { Box as TuiBox, Component } from "@oh-my-pi/pi-tui";
 import { createHash, randomUUID } from "node:crypto";
 import {
   chmodSync,
@@ -683,10 +683,10 @@ export function formatSupervisionNotification(
   leads: readonly SupervisedLeadSnapshot[],
   status: SupervisionContextStatus = "fresh",
 ): string {
-  if (status === "unavailable") return "Pi Herdsman · unavailable";
+  if (status === "unavailable") return "OMP Herdsman · unavailable";
   const ordered = orderedSupervisionLeads(leads);
   const lines = [
-    `Pi Herdsman · ${ordered.length} herd${ordered.length === 1 ? "" : "s"}${status === "stale" ? " · stale" : ""}`,
+    `OMP Herdsman · ${ordered.length} herd${ordered.length === 1 ? "" : "s"}${status === "stale" ? " · stale" : ""}`,
     ...ordered
       .slice(0, 8)
       .map(

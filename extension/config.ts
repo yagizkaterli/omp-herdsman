@@ -55,24 +55,24 @@ function parseRawConfig(content: string): Partial<HerdsmanConfig> {
     parsed = JSON.parse(content);
   } catch (error) {
     throw new Error(
-      `Invalid Pi Herdsman config JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `Invalid OMP Herdsman config JSON: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-    throw new Error("Invalid Pi Herdsman config: root must be an object");
+    throw new Error("Invalid OMP Herdsman config: root must be an object");
   const record = parsed as Record<string, unknown>;
   for (const key of Object.keys(record))
     if (!CONFIG_KEYS.has(key as ConfigKey))
-      throw new Error(`Invalid Pi Herdsman config: unknown field ${key}`);
+      throw new Error(`Invalid OMP Herdsman config: unknown field ${key}`);
   const result: Partial<HerdsmanConfig> = {};
   if ("spawnPlacement" in record) {
     if (!isSpawnPlacement(record.spawnPlacement))
-      throw new Error("Invalid Pi Herdsman config field spawnPlacement");
+      throw new Error("Invalid OMP Herdsman config field spawnPlacement");
     result.spawnPlacement = record.spawnPlacement;
   }
   if ("contextRetirement" in record) {
     if (typeof record.contextRetirement !== "boolean")
-      throw new Error("Invalid Pi Herdsman config field contextRetirement");
+      throw new Error("Invalid OMP Herdsman config field contextRetirement");
     result.contextRetirement = record.contextRetirement;
   }
   for (const key of [
@@ -81,7 +81,7 @@ function parseRawConfig(content: string): Partial<HerdsmanConfig> {
   ] as const)
     if (key in record) {
       if (!validByteLimit(record[key]))
-        throw new Error(`Invalid Pi Herdsman config field ${key}`);
+        throw new Error(`Invalid OMP Herdsman config field ${key}`);
       result[key] = record[key];
     }
   return result;
@@ -132,21 +132,21 @@ export function updateConfig<K extends ConfigKey>(
 ): void {
   const path = herdsmanConfigPath();
   const release = claimProcessLock(`${path}.lock`, {
-    name: "Pi Herdsman config update",
+    name: "OMP Herdsman config update",
   });
   try {
     const current = readRawConfig();
     if (value !== undefined) {
       if (key === "spawnPlacement" && !isSpawnPlacement(value))
-        throw new Error("Invalid Pi Herdsman config field spawnPlacement");
+        throw new Error("Invalid OMP Herdsman config field spawnPlacement");
       if (key === "contextRetirement" && typeof value !== "boolean")
-        throw new Error("Invalid Pi Herdsman config field contextRetirement");
+        throw new Error("Invalid OMP Herdsman config field contextRetirement");
       if (
         key !== "spawnPlacement" &&
         key !== "contextRetirement" &&
         !validByteLimit(value)
       )
-        throw new Error(`Invalid Pi Herdsman config field ${key}`);
+        throw new Error(`Invalid OMP Herdsman config field ${key}`);
       current[key] = value;
     } else delete current[key];
     if (Object.keys(current).length)

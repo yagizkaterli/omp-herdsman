@@ -3,11 +3,11 @@ import { join } from "node:path";
 
 if (process.argv.includes("--dispatch-check")) {
   const { runAgentLoop } =
-    await import("../node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.js");
+    await import("../node_modules/@oh-my-pi/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.js");
   const { createAssistantMessageEventStream } =
-    await import("../node_modules/@earendil-works/pi-ai/dist/index.js");
+    await import("../node_modules/@oh-my-pi/pi-ai/dist/index.js");
   const directory = mkdtempSync(
-    join("/tmp", "pi-herdsman-dispatch-"),
+    join("/tmp", "omp-herdsman-dispatch-"),
   ).toString();
   const sentinel = join(directory, "executed");
   let executionEnd;

@@ -41,7 +41,7 @@ function withPiAgentDir<T>(agentDir: string, callback: () => T): T {
 }
 
 function discoverAgentDefinitionsWithContents(content: string) {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-invalid-agent-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-invalid-agent-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   writeFileSync(join(agents, "custom.md"), content);
@@ -93,7 +93,7 @@ test("parses scalar frontmatter fields and applies defaults", () => {
     /custom\.md agent custom field enabled: must be a boolean/,
   );
 
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-enabled-default-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-enabled-default-"));
   assert.equal(
     withPiAgentDir(root, () => discoverAgent("scout").frontmatter.enabled),
     true,
@@ -204,7 +204,7 @@ permission:
 });
 
 test("resolves whole-line body file references from their definition", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-body-files-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-body-files-"));
   const agents = join(root, "agents");
   const prompts = join(root, "prompts");
   mkdirSync(agents);
@@ -227,7 +227,7 @@ test(
   "resolves native Windows body file reference forms",
   { skip: process.platform !== "win32" },
   () => {
-    const root = mkdtempSync(join(tmpdir(), "pi-herdsman-windows-body-files-"));
+    const root = mkdtempSync(join(tmpdir(), "omp-herdsman-windows-body-files-"));
     const agents = join(root, "agents");
     const prompts = join(root, "prompts");
     mkdirSync(agents);
@@ -247,8 +247,8 @@ test(
 );
 
 test("normalizes home-relative references in project and global definitions", () => {
-  const project = mkdtempSync(join(tmpdir(), "pi-herdsman-project-agents-"));
-  const global = mkdtempSync(join(tmpdir(), "pi-herdsman-global-agents-"));
+  const project = mkdtempSync(join(tmpdir(), "omp-herdsman-project-agents-"));
+  const global = mkdtempSync(join(tmpdir(), "omp-herdsman-global-agents-"));
   const projectAgentDir = join(project, ".pi", "agents");
   const globalAgents = join(global, "agents");
   mkdirSync(projectAgentDir, { recursive: true });
@@ -276,7 +276,7 @@ test("normalizes home-relative references in project and global definitions", ()
 });
 
 test("leaves unsupported home and shell-looking references unchanged", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-body-reference-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-body-reference-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   writeFileSync(
@@ -383,7 +383,7 @@ test("rejects malformed capability fields", () => {
 });
 
 test("selects global and project context independently in native order", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-context-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-context-"));
   const agentDir = join(root, "custom-agent-dir");
   const project = join(root, "project");
   const cwd = join(project, "nested");
@@ -456,7 +456,7 @@ test("selects global and project context independently in native order", () => {
 });
 
 test("discovers the five portable bundled definitions without a user agents directory", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-agents-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-agents-"));
   assert.deepEqual(
     withPiAgentDir(root, () =>
       discoverAgentDefinitions().map((definition) => definition.name),
@@ -566,7 +566,7 @@ test("bundled definitions carry portable capabilities and role contracts", () =>
 });
 
 test("enforces read-only managed launch policies and reviewer leaf projection", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-audit-policy-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-audit-policy-"));
   const expected = new Map([
     ["scout", ["read", "ls", "find", "grep", "ask_owner"]],
     [
@@ -650,7 +650,7 @@ test("does not bundle the operator-local MCP runner", () => {
 });
 
 test("composes matching bundled bodies with bodyMode", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-body-mode-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-body-mode-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   const base = withPiAgentDir(root, () => discoverAgent("scout").body);
@@ -698,7 +698,7 @@ test("composes matching bundled bodies with bodyMode", () => {
     base,
   );
   const promptRoot = mkdtempSync(
-    join(tmpdir(), "pi-herdsman-body-mode-prompt-"),
+    join(tmpdir(), "omp-herdsman-body-mode-prompt-"),
   );
   const promptAgents = join(promptRoot, "agents");
   mkdirSync(promptAgents);
@@ -711,7 +711,7 @@ test("composes matching bundled bodies with bodyMode", () => {
   assert.equal(definition.frontmatter.systemPromptMode, "append");
   assert.match(definition.body, /\n\nExtra\.$/);
   const invalidRoot = mkdtempSync(
-    join(tmpdir(), "pi-herdsman-body-mode-invalid-"),
+    join(tmpdir(), "omp-herdsman-body-mode-invalid-"),
   );
   const invalidAgents = join(invalidRoot, "agents");
   mkdirSync(invalidAgents);
@@ -733,14 +733,14 @@ test("composes matching bundled bodies with bodyMode", () => {
 });
 
 test("discovers project definitions and gives global overlays final precedence", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-project-agents-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-project-agents-"));
   const projectAgentDir = join(root, ".pi", "agents");
   mkdirSync(projectAgentDir, { recursive: true });
   writeFileSync(
     join(projectAgentDir, "project.md"),
     "---\nname: project-only\nmodel: project-model\n---\nProject policy",
   );
-  const globalRoot = mkdtempSync(join(tmpdir(), "pi-herdsman-project-global-"));
+  const globalRoot = mkdtempSync(join(tmpdir(), "omp-herdsman-project-global-"));
   const globalAgents = join(globalRoot, "agents");
   mkdirSync(globalAgents);
   writeFileSync(
@@ -757,7 +757,7 @@ test("discovers project definitions and gives global overlays final precedence",
 });
 
 test("project discovery tolerates a missing directory and rejects a file", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-project-root-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-project-root-"));
   withPiAgentDir(root, () => {
     assert.deepEqual(
       discoverAgentDefinitions({ projectRoot: root }).some(
@@ -784,9 +784,9 @@ test("project approval is emitted only when requested", () => {
 });
 
 test("composes all definition layers with provenance and whole-array replacement", () => {
-  const project = mkdtempSync(join(tmpdir(), "pi-herdsman-layered-project-"));
+  const project = mkdtempSync(join(tmpdir(), "omp-herdsman-layered-project-"));
   const projectAgentDir = join(project, ".pi", "agents");
-  const global = mkdtempSync(join(tmpdir(), "pi-herdsman-layered-global-"));
+  const global = mkdtempSync(join(tmpdir(), "omp-herdsman-layered-global-"));
   const globalAgents = join(global, "agents");
   mkdirSync(projectAgentDir, { recursive: true });
   mkdirSync(globalAgents);
@@ -818,10 +818,10 @@ test("composes all definition layers with provenance and whole-array replacement
 
 test("project body modes, duplicate names, body-file provenance, and child validation use the shared engine", () => {
   const project = mkdtempSync(
-    join(tmpdir(), "pi-herdsman-project-validation-"),
+    join(tmpdir(), "omp-herdsman-project-validation-"),
   );
   const projectAgentDir = join(project, ".pi", "agents");
-  const global = mkdtempSync(join(tmpdir(), "pi-herdsman-global-validation-"));
+  const global = mkdtempSync(join(tmpdir(), "omp-herdsman-global-validation-"));
   const globalAgents = join(global, "agents");
   mkdirSync(projectAgentDir, { recursive: true });
   mkdirSync(globalAgents);
@@ -899,7 +899,7 @@ test("project body modes, duplicate names, body-file provenance, and child valid
 });
 
 test("overlays a bundled definition and extends the roster", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-agents-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-agents-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   const overridePath = join(agents, "implementer.md");
@@ -940,7 +940,7 @@ test("overlays a bundled definition and extends the roster", () => {
 });
 
 test("merges enabled overrides and validates disabled children without hiding the root roster", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-enabled-override-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-enabled-override-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   writeFileSync(
@@ -971,7 +971,7 @@ test("merges enabled overrides and validates disabled children without hiding th
 });
 
 test("validates user duplicates and merged agent references", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-"));
   const agents = join(root, "agents");
   mkdirSync(join(agents, "nested"), { recursive: true });
   writeFileSync(
@@ -1014,7 +1014,7 @@ test("validates user duplicates and merged agent references", () => {
 });
 
 test("keeps a bundled parent valid when its child is overridden", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   writeFileSync(
@@ -1038,7 +1038,7 @@ test("transports complex prompts through a private temporary file", () => {
     assertPosixMode(promptPath, 0o600);
     const tempRoot = join(
       tmpdir(),
-      `pi-herdsman-${process.getuid?.() ?? "user"}`,
+      `omp-herdsman-${process.getuid?.() ?? "user"}`,
     );
     assertPosixMode(tempRoot, 0o700);
     assertPosixMode(join(tempRoot, "prompts"), 0o700);
@@ -1180,7 +1180,7 @@ test("resolves model and thinking fallbacks independently at launch", () => {
 });
 
 test("bundled definitions leave execution settings to the controller", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-bundled-settings-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-bundled-settings-"));
   withPiAgentDir(root, () => {
     for (const name of [
       "generalist",
@@ -1238,7 +1238,7 @@ test("requires a body prompt path for body-bearing agents", () => {
 });
 
 test("bundled generalist definition retains its declared tool policy", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-agent-policy-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-agent-policy-"));
   const generalist = withPiAgentDir(root, () => discoverAgent("generalist"));
   assert.equal(generalist.frontmatter.noExtensions, true);
   assert.deepEqual(generalist.frontmatter.tools, [
@@ -1304,7 +1304,7 @@ test("managed launch policy always includes ask_owner", () => {
       expected.some((arg) => arg.split(",").includes("ask_owner")) ? 1 : 0,
     );
   }
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-agent-standalone-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-agent-standalone-"));
   const standalone = withPiAgentDir(root, () => discoverAgent("generalist"));
   assert.match(
     standalone.path.split(sep).join("/"),
@@ -1484,7 +1484,7 @@ test("preserves current definition metadata", () => {
 });
 
 test("expands body references with caller precedence and no recursion", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-body-expand-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-body-expand-"));
   const nested = join(root, "nested.md");
   const included = join(root, "included.md");
   writeFileSync(nested, "@./ignored.md");
@@ -1761,7 +1761,7 @@ test("projects parent-launched definitions as exact leaf capabilities", () => {
 });
 
 test("merges effective frontmatter and preserves narrow override mutations", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-overrides-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-overrides-"));
   const agents = join(root, "agents");
   mkdirSync(agents);
   const path = join(agents, "reviewer.md");
@@ -1803,7 +1803,7 @@ test("merges effective frontmatter and preserves narrow override mutations", () 
     original.replace("model: old/model\r\n", ""),
   );
   const createRoot = mkdtempSync(
-    join(tmpdir(), "pi-herdsman-override-create-"),
+    join(tmpdir(), "omp-herdsman-override-create-"),
   );
   const createDefinition = {
     name: "custom/name",
@@ -1830,7 +1830,7 @@ test("merges effective frontmatter and preserves narrow override mutations", () 
   );
   assert.equal(noop.changed, false);
   const enabledRoot = mkdtempSync(
-    join(tmpdir(), "pi-herdsman-enabled-persist-"),
+    join(tmpdir(), "omp-herdsman-enabled-persist-"),
   );
   const enabledDefinition = {
     name: "reviewer",

@@ -21,7 +21,7 @@ test("released runtime metadata matches the locked Pi and has Herdr checksums", 
   const runtime = packageJson.piHerdsman?.runtime;
   assert.equal(
     runtime?.pi,
-    packageLock.packages["node_modules/@earendil-works/pi-coding-agent"]?.version,
+    packageLock.packages["node_modules/@oh-my-pi/pi-coding-agent"]?.version,
   );
   assert.match(runtime?.herdr?.version ?? "", /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/u);
   assert.deepEqual(Object.keys(runtime?.herdr?.sha256 ?? {}).sort(), [
@@ -41,7 +41,7 @@ function executable(path, content) {
 }
 
 function fixture({ badChecksum = false } = {}) {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-install-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-install-"));
   const bin = join(root, "bin");
   const home = join(root, "home");
   mkdirSync(bin);
@@ -57,7 +57,7 @@ function fixture({ badChecksum = false } = {}) {
   writeFileSync(log, "");
   writeFileSync(piVersion, "0.1.0\n");
   writeFileSync(herdrVersion, "0.1.0\n");
-  writeFileSync(piList, `  npm:pi-herdsman@${packageJson.version}\n`);
+  writeFileSync(piList, `  npm:omp-herdsman@${packageJson.version}\n`);
 
   executable(
     herdrAsset,
@@ -200,7 +200,7 @@ test(
       assert.match(
         first.stdout,
         new RegExp(
-          `Pi Herdsman ${packageJson.version} ready with Pi ${packageJson.piHerdsman.runtime.pi} and Herdr ${packageJson.piHerdsman.runtime.herdr.version}`,
+          `OMP Herdsman ${packageJson.version} ready with Pi ${packageJson.piHerdsman.runtime.pi} and Herdr ${packageJson.piHerdsman.runtime.herdr.version}`,
           "u",
         ),
       );
@@ -209,11 +209,11 @@ test(
       assert.match(
         firstLog,
         new RegExp(
-          `npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${packageJson.piHerdsman.runtime.pi}`,
+          `npm install -g --ignore-scripts @oh-my-pi/pi-coding-agent@${packageJson.piHerdsman.runtime.pi}`,
           "u",
         ),
       );
-      assert.match(firstLog, /pi install npm:pi-herdsman --no-approve/u);
+      assert.match(firstLog, /pi install npm:omp-herdsman --no-approve/u);
       assert.match(firstLog, /herdr integration install pi/u);
       assert.match(
         firstLog,
@@ -238,7 +238,7 @@ test(
         ),
       );
       assert.ok(
-        second.stdout.includes(`Pi Herdsman ${packageJson.version} already installed`),
+        second.stdout.includes(`OMP Herdsman ${packageJson.version} already installed`),
       );
 
       const secondLog = readFileSync(setup.log, "utf8");

@@ -13,7 +13,7 @@ let failDirectoryFsyncAt: number | undefined;
 let directoryFsyncCount = 0;
 let lastDirectoryFsyncError: Error | undefined;
 const directoryFsyncFds = new Set<number>();
-mock.module("@earendil-works/pi-coding-agent", {
+mock.module("@oh-my-pi/pi-coding-agent", {
   namedExports: {
     getAgentDir: () => process.env.PI_CODING_AGENT_DIR ?? tmpdir(),
   },

@@ -62,14 +62,14 @@ const state: ManagedAgentState = {
 };
 test("V4 markers require canonical UUIDs and never contain task text", () => {
   const id = "44444444-4444-4444-8444-444444444444";
-  assert.equal(controlMarker(id), `__PI_HERDSMAN_AGENT_V4__:${id}`);
+  assert.equal(controlMarker(id), `__OMP_HERDSMAN_AGENT_V4__:${id}`);
   assert.equal(parseControlMarker(controlMarker(id)), id);
   assert.equal(parseControlMarker(`${controlMarker(id)} task`), undefined);
-  assert.equal(parseControlMarker("__PI_HERDSMAN_AGENT_V4__:bad"), undefined);
-  assert.equal(parseControlMarker("__PI_HERDSMAN_AGENT_V4__:"), undefined);
+  assert.equal(parseControlMarker("__OMP_HERDSMAN_AGENT_V4__:bad"), undefined);
+  assert.equal(parseControlMarker("__OMP_HERDSMAN_AGENT_V4__:"), undefined);
 });
 test("Pi UUIDv7 session and run identities are valid mailbox fields", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const v7State: ManagedAgentState = {
     ...state,
     runId: "018f2f2e-7b11-7abc-8def-0123456789ab",
@@ -111,7 +111,7 @@ test("Pi UUIDv7 session and run identities are valid mailbox fields", () => {
   );
 });
 test("asks and reply requests round-trip with strict correlation", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const ask: AskRecord = {
     version: 4,
     askId: "44444444-4444-4444-8444-444444444444",
@@ -146,7 +146,7 @@ test("asks and reply requests round-trip with strict correlation", () => {
   assert.equal(readAsk(path), undefined);
 });
 test("reply ask IDs are required and non-reply requests cannot carry one", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const base = {
     version: 4 as const,
     runId: state.runId,
@@ -195,7 +195,7 @@ test("reply ask IDs are required and non-reply requests cannot carry one", () =>
   );
 });
 test("readPendingAsk fails closed for a missing or mismatched artifact", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const waiting = {
     ...state,
     activeRequestId: state.runId,
@@ -234,7 +234,7 @@ test("readPendingAsk fails closed for a missing or mismatched artifact", () => {
   assert.throws(() => readPendingAsk(path, waiting), /identity did not match/);
 });
 test("rejects malformed state records", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   writeFileSync(
     join(path, "state.json"),
     JSON.stringify({ ...state, extra: true }),
@@ -276,7 +276,7 @@ test("rejects malformed state records", () => {
   assert.throws(() => readAgentState(path), /Unknown mailbox field/);
 });
 test("waits on the exact state path and resolves after an update", async () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const waiting = waitForState(
     path,
     (value) => value.completedRequestId === state.runId,
@@ -289,7 +289,7 @@ test("waits on the exact state path and resolves after an update", async () => {
   assert.equal((await waiting).completedRequestId, state.runId);
 });
 test("state waiter observes a write made during its initial check", async () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   writeAgentState(path, state);
   let written = false;
   const waiting = waitForState(
@@ -306,7 +306,7 @@ test("state waiter observes a write made during its initial check", async () => 
   assert.equal((await waiting).completedRequestId, state.runId);
 });
 test("rejects unsafe IDs and invalid conditional results", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   assert.throws(
     () =>
       writeRequest(path, {
@@ -371,7 +371,7 @@ test("rejects unsafe IDs and invalid conditional results", () => {
   );
 });
 test("aborted state waits reject immediately", async () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const controller = new AbortController();
   controller.abort();
   await assert.rejects(
@@ -383,7 +383,7 @@ test("aborted state waits reject immediately", async () => {
   );
 });
 test("mailbox records are atomic JSON files with strict identity fields", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   assert.deepEqual(readAgentState(path), state);
@@ -403,7 +403,7 @@ test("mailbox records are atomic JSON files with strict identity fields", () => 
   assert.deepEqual(readRequest(path, request.requestId), request);
 });
 test("acknowledgement identity determines whether a handoff remains pending", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   const requestId = "66666666-6666-4666-8666-666666666666";
@@ -455,14 +455,14 @@ test("acknowledgement identity determines whether a handoff remains pending", ()
   assert.equal(unacknowledgedRequestExists(path, state), true);
 });
 test("malformed request handoff fails closed", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   writeFileSync(join(path, "request-bad.json"), "not json");
   assert.equal(unacknowledgedRequestExists(path, state), true);
 });
 test("ambiguous unacknowledged requests are rejected", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   for (const requestId of [
@@ -493,7 +493,7 @@ test("mailbox paths separate workspace and label and use private directories", (
   assert.equal(first, agentMailboxPath("workspace-a", "agent"));
   assert.notEqual(first, agentMailboxPath("workspace-b", "agent"));
   assert.notEqual(first, agentMailboxPath("workspace-a", "agent-2"));
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   assertPosixMode(path, 0o700);
 });
@@ -514,7 +514,7 @@ test("mailbox scans stay inside the current protocol namespace", () => {
   }
 });
 test("startup claims serialize access and reset preserves the claim", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   const requestId = "88888888-8888-4888-8888-888888888888";
@@ -582,7 +582,7 @@ test("startup claims serialize access and reset preserves the claim", () => {
   assert.equal(readdirSync(path).includes(".starting"), false);
 });
 test("startup claims recover one valid dead PID and reject malformed claims", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const staleId = randomUUID();
   resetAgentMailbox(path);
   mkdirSync(join(path, ".starting"));
@@ -598,7 +598,7 @@ test("startup claims recover one valid dead PID and reject malformed claims", ()
   unlinkSync(join(path, ".starting", "999999-malformed"));
 });
 test("stale recovery cannot remove a replacement owner", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const claimDir = join(path, ".starting");
   const staleId = randomUUID();
   const freshId = randomUUID();
@@ -640,13 +640,13 @@ test("stale recovery cannot remove a replacement owner", () => {
   );
 });
 test("empty startup claim directories fail closed", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   mkdirSync(join(path, ".starting"));
   assert.throws(() => claimAgentMailbox(path), /Unable to verify/);
 });
 test("mailbox cleanup preserves the owning startup claim until release", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   resetAgentMailbox(path);
   writeAgentState(path, state);
   const release = claimAgentMailbox(path);
@@ -659,7 +659,7 @@ test("mailbox cleanup preserves the owning startup claim until release", () => {
   removeAgentMailbox(path);
 });
 test("malformed JSON and legacy protocol records are rejected", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   writeFileSync(join(path, "state.json"), "not json");
   assert.throws(() => readAgentState(path), /Unexpected token|JSON/);
   writeFileSync(
@@ -772,7 +772,7 @@ test("lists malformed current mailbox state as bounded diagnostics", () => {
   }
 });
 test("valid results round-trip and atomic temporary files are removed", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const result = {
     version: 4 as const,
     runId: state.runId,
@@ -796,7 +796,7 @@ test("valid results round-trip and atomic temporary files are removed", () => {
   assert.equal(readResult(path, result.requestId), undefined);
 });
 test("request and result size limits remain independent", () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const request = {
     version: 4 as const,
     runId: state.runId,
@@ -825,7 +825,7 @@ test("request and result size limits remain independent", () => {
   assert.throws(() => writeResult(path, result), /too large/);
 });
 test("state waiter removes its abort listener after resolution", async () => {
-  const path = mkdtempSync(join(tmpdir(), "pi-herdsman-mailbox-test-"));
+  const path = mkdtempSync(join(tmpdir(), "omp-herdsman-mailbox-test-"));
   const listeners = new Set<() => void>();
   const signal = {
     aborted: false,

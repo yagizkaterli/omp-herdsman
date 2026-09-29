@@ -73,7 +73,7 @@ const agentTool = (pi: ReturnType<typeof fakePi>, name: string) =>
 
 test("combined status reports a completed agent as pending, not active", async () => {
   setAgentEnvironment("status-pending-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("status-pending-parent");
   const triggerRequestId = randomUUID();
   const pendingRequestId = triggerRequestId;
@@ -139,11 +139,11 @@ test("combined status reports a completed agent as pending, not active", async (
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ];
@@ -158,7 +158,7 @@ test("combined status reports a completed agent as pending, not active", async (
       await handler(undefined, fakeAgentContext(entries));
     const resultMessages = pi.sentMessageCalls.filter(
       ({ message }) =>
-        (message as any).customType === "pi-herdsman-agent-result",
+        (message as any).customType === "omp-herdsman-agent-result",
     );
     assert.equal(resultMessages.length, 2);
     const statuses = resultMessages.map(
@@ -217,7 +217,7 @@ test("combined status reports a completed agent as pending, not active", async (
     assert.equal(
       pi.sentMessageCalls.some(
         ({ message }) =>
-          (message as any).customType === "pi-herdsman-delegation-guidance",
+          (message as any).customType === "omp-herdsman-delegation-guidance",
       ),
       false,
     );
@@ -257,15 +257,15 @@ test("conflicting same-request entries do not suppress an exact combined result"
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "agent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
       },
     },
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: {
         ...resultEntryDetails(child, REQUEST_ID),
         runId: "11111111-1111-4111-8111-111111111111",
@@ -291,7 +291,7 @@ test("conflicting same-request entries do not suppress an exact combined result"
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") queued++;
+      if ((message as any).customType === "omp-herdsman-agent-result") queued++;
       else entries.push(message);
     },
   });
@@ -327,7 +327,7 @@ test("conflicting same-request entries do not suppress an exact combined result"
 
     entries.push({
       message: {
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(child, REQUEST_ID),
       },
     });
@@ -353,7 +353,7 @@ test("conflicting same-request entries do not suppress an exact combined result"
     assert.equal(
       pi.sentMessageCalls.some(
         ({ message }) =>
-          (message as any).customType === "pi-herdsman-delegation-guidance",
+          (message as any).customType === "omp-herdsman-delegation-guidance",
       ),
       false,
     );
@@ -399,7 +399,7 @@ test("reload result recovery rejects wrong owners and replacement identities", a
     );
     assert.equal(
       wrongOwnerPi.sent.some(
-        (message: any) => message.customType === "pi-herdsman-agent-result",
+        (message: any) => message.customType === "omp-herdsman-agent-result",
       ),
       false,
     );
@@ -438,7 +438,7 @@ test("reload result recovery rejects wrong owners and replacement identities", a
     );
     assert.equal(
       replacementPi.sent.some(
-        (message: any) => message.customType === "pi-herdsman-agent-result",
+        (message: any) => message.customType === "omp-herdsman-agent-result",
       ),
       true,
     );
@@ -530,8 +530,8 @@ test("malformed disappearance proof retains failed-launch cleanup evidence", asy
           if (separator > 0) {
             const key = assignment.slice(0, separator);
             const value = assignment.slice(separator + 1);
-            if (key === "PI_HERDSMAN_RUN_ID") runId = value;
-            if (key === "PI_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
+            if (key === "OMP_HERDSMAN_RUN_ID") runId = value;
+            if (key === "OMP_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
           }
         }
         tabPresent = panePresent = true;
@@ -639,9 +639,9 @@ test("malformed disappearance proof retains failed-launch cleanup evidence", asy
         if (args[1] === "run") {
           const value = (key: string) =>
             new RegExp(`${key}='([^']*)'`).exec(args.at(-1) ?? "")?.[1];
-          runId = value("PI_HERDSMAN_RUN_ID") ?? runId;
+          runId = value("OMP_HERDSMAN_RUN_ID") ?? runId;
           ownerSessionId =
-            value("PI_HERDSMAN_OWNER_SESSION_ID") ?? ownerSessionId;
+            value("OMP_HERDSMAN_OWNER_SESSION_ID") ?? ownerSessionId;
         }
         return { stdout: "{}", stderr: "", code: 0 };
       }
@@ -1013,9 +1013,9 @@ test("assignment rollback retains primary failure and actionable cleanup details
         for (let i = 0; i < args.length - 1; i++) {
           if (args[i] !== "--env") continue;
           const assignment = args[i + 1]!;
-          if (assignment.startsWith("PI_HERDSMAN_RUN_ID="))
+          if (assignment.startsWith("OMP_HERDSMAN_RUN_ID="))
             runId = assignment.slice(19);
-          if (assignment.startsWith("PI_HERDSMAN_OWNER_SESSION_ID="))
+          if (assignment.startsWith("OMP_HERDSMAN_OWNER_SESSION_ID="))
             ownerSessionId = assignment.slice(29);
         }
         return {
@@ -1059,8 +1059,8 @@ test("assignment rollback retains primary failure and actionable cleanup details
           if (separator <= 0) continue;
           const key = assignment.slice(0, separator);
           const value = assignment.slice(separator + 1);
-          if (key === "PI_HERDSMAN_RUN_ID") runId = value;
-          if (key === "PI_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
+          if (key === "OMP_HERDSMAN_RUN_ID") runId = value;
+          if (key === "OMP_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
         }
         return {
           stdout: JSON.stringify({
@@ -1119,9 +1119,9 @@ test("assignment rollback retains primary failure and actionable cleanup details
         if (args[1] === "run") {
           const value = (key: string) =>
             new RegExp(`${key}='([^']*)'`).exec(args.at(-1) ?? "")?.[1];
-          runId = value("PI_HERDSMAN_RUN_ID") ?? runId;
+          runId = value("OMP_HERDSMAN_RUN_ID") ?? runId;
           ownerSessionId =
-            value("PI_HERDSMAN_OWNER_SESSION_ID") ?? ownerSessionId;
+            value("OMP_HERDSMAN_OWNER_SESSION_ID") ?? ownerSessionId;
         }
         return { stdout: "{}", stderr: "", code: 0 };
       }
@@ -1327,7 +1327,7 @@ test("recovery requires the official session and retries one failed delivery", a
   const previousRequestId = randomUUID();
   const entries: unknown[] = [
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: {
         ...resultEntryDetails(removalState, previousRequestId),
         status: "completed",
@@ -1340,14 +1340,14 @@ test("recovery requires the official session and retries one failed delivery", a
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") {
+      if ((message as any).customType === "omp-herdsman-agent-result") {
         delivered = String((message as any).content ?? "");
         deliveredDetails = (message as any).details;
         attempts++;
         if (attempts <= transientFailures) throw new Error("transient");
         successful++;
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(removalState, REQUEST_ID),
         });
       } else entries.push(message);
@@ -1434,7 +1434,7 @@ test("in-place branch history does not reuse a result index", async () => {
   const firstRequestId = randomUUID();
   const secondRequestId = randomUUID();
   const first = {
-    customType: "pi-herdsman-agent-result",
+    customType: "omp-herdsman-agent-result",
     details: {
       ...resultEntryDetails(state, firstRequestId),
       status: "completed",
@@ -1443,7 +1443,7 @@ test("in-place branch history does not reuse a result index", async () => {
     },
   };
   const abandoned = {
-    customType: "pi-herdsman-agent-result",
+    customType: "omp-herdsman-agent-result",
     details: {
       ...resultEntryDetails(state, secondRequestId),
       status: "completed",
@@ -1458,7 +1458,7 @@ test("in-place branch history does not reuse a result index", async () => {
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result")
+      if ((message as any).customType === "omp-herdsman-agent-result")
         delivered = message;
       entries.push(message);
     },
@@ -1530,7 +1530,7 @@ test("completed and failed one-shot agents converge after durable delivery", asy
   }
   const entries: unknown[] = [
     {
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: resultEntryDetails(children[0], children[0].completedRequestId!),
     },
   ];
@@ -1540,7 +1540,7 @@ test("completed and failed one-shot agents converge after durable delivery", asy
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result")
+      if ((message as any).customType === "omp-herdsman-agent-result")
         deliveries++;
     },
   });
@@ -1555,7 +1555,7 @@ test("completed and failed one-shot agents converge after durable delivery", asy
     assert.ok(readResult(mailboxes[1], children[1].completedRequestId!));
 
     entries.push({
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: resultEntryDetails(children[1], children[1].completedRequestId!),
     });
     t.mock.timers.tick(1000);
@@ -1620,10 +1620,10 @@ test("one-shot close failure retains the result for exact cleanup retry", async 
       return lifecycle.exec(command, args);
     },
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") {
+      if ((message as any).customType === "omp-herdsman-agent-result") {
         deliveries++;
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(child, REQUEST_ID),
         });
       }
@@ -1703,9 +1703,9 @@ test("delivered-result cascade retries descendant mailbox cleanup failure", asyn
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result")
+      if ((message as any).customType === "omp-herdsman-agent-result")
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(parent, REQUEST_ID),
         });
     },
@@ -1800,7 +1800,7 @@ test("recovery redelivers an unpersisted child result and then cleans it safely"
     entries: firstEntries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") queued++;
+      if ((message as any).customType === "omp-herdsman-agent-result") queued++;
       else firstEntries.push(message);
     },
   });
@@ -1826,12 +1826,12 @@ test("recovery redelivers an unpersisted child result and then cleans it safely"
     entries: recoveredEntries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") {
+      if ((message as any).customType === "omp-herdsman-agent-result") {
         redeliveries++;
         recoveredEntries.push({
           message: {
             role: "custom",
-            customType: "pi-herdsman-agent-result",
+            customType: "omp-herdsman-agent-result",
             details: (message as any).details,
           },
         });
@@ -1846,7 +1846,7 @@ test("recovery redelivers an unpersisted child result and then cleans it safely"
     assert.equal(
       recoveredEntries.filter(
         (entry: any) =>
-          entry.message?.customType === "pi-herdsman-agent-result" &&
+          entry.message?.customType === "omp-herdsman-agent-result" &&
           entry.message.details?.requestId === REQUEST_ID,
       ).length,
       1,
@@ -1854,7 +1854,7 @@ test("recovery redelivers an unpersisted child result and then cleans it safely"
     assert.equal(
       recovered.sentMessageCalls.some(
         ({ message }) =>
-          (message as any).customType === "pi-herdsman-delegation-guidance",
+          (message as any).customType === "omp-herdsman-delegation-guidance",
       ),
       false,
     );
@@ -1929,7 +1929,7 @@ test("settlement redelivers an unpersisted child result in the same session", as
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType !== "pi-herdsman-agent-result") return;
+      if ((message as any).customType !== "omp-herdsman-agent-result") return;
 
       deliveries++;
       if (deliveries === 1) return;
@@ -1937,7 +1937,7 @@ test("settlement redelivers an unpersisted child result in the same session", as
       entries.push({
         message: {
           role: "custom",
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: (message as any).details,
         },
       });
@@ -1955,7 +1955,7 @@ test("settlement redelivers an unpersisted child result in the same session", as
     assert.equal(
       entries.some(
         (entry: any) =>
-          entry.message?.customType === "pi-herdsman-agent-result",
+          entry.message?.customType === "omp-herdsman-agent-result",
       ),
       false,
     );
@@ -2020,7 +2020,7 @@ test("recovered no-live result removal retry never cleans up a replacement", asy
     exec: lifecycle.exec,
     sendMessage: (message) => {
       entries.push({
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: (message as any).details,
       });
     },
@@ -2148,7 +2148,7 @@ test("controller reply submits the normal request and preserves the assignment",
       "working",
       identity.piSessionId,
       (requestMailbox, marker) => {
-        const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+        const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
         submitted = readRequest(requestMailbox, requestId);
         const current = readAgentState(requestMailbox)!;
         writeAgentState(requestMailbox, {
@@ -2296,7 +2296,7 @@ test("controller cleanup barrier blocks newer work until stale acknowledgement c
       "working",
       identity.piSessionId,
       (requestMailbox, marker) => {
-        const requestId = marker.slice("__PI_HERDSMAN_AGENT_V4__:".length);
+        const requestId = marker.slice("__OMP_HERDSMAN_AGENT_V4__:".length);
         submitted = readRequest(requestMailbox, requestId);
         const current = readAgentState(requestMailbox)!;
         writeAgentState(requestMailbox, {
@@ -2962,9 +2962,9 @@ test("result cleanup retains durable delivery across agent identity changes", as
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") {
+      if ((message as any).customType === "omp-herdsman-agent-result") {
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(initial, REQUEST_ID),
         });
         writeAgentState(mailbox, changed);
@@ -2976,7 +2976,7 @@ test("result cleanup retains durable delivery across agent identity changes", as
     await pi.events.get("session_start")![0](undefined, fakeContext(entries));
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-result",
+        (message: any) => message.customType === "omp-herdsman-agent-result",
       ).length,
       1,
     );
@@ -3023,7 +3023,7 @@ test("delivered result remains while agent state is active", async () => {
     exec: leadExec(label, "working", "dddddddd-dddd-4ddd-8ddd-dddddddddddd"),
     sendMessage: () => {
       entries.push({
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(activeState, REQUEST_ID),
       });
     },
@@ -3035,7 +3035,7 @@ test("delivered result remains while agent state is active", async () => {
     assert.equal(
       pi.sentMessageCalls.some(
         ({ message }) =>
-          (message as any).customType === "pi-herdsman-delegation-guidance",
+          (message as any).customType === "omp-herdsman-delegation-guidance",
       ),
       false,
     );
@@ -3043,7 +3043,7 @@ test("delivered result remains while agent state is active", async () => {
     assert.equal(
       pi.sentMessageCalls.some(
         ({ message }) =>
-          (message as any).customType === "pi-herdsman-delegation-guidance",
+          (message as any).customType === "omp-herdsman-delegation-guidance",
       ),
       false,
     );
@@ -3088,7 +3088,7 @@ test("result delivery identifies retired sessions and honors the disabled settin
       entries: [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: identity.piSessionId,
             definition: "agent",
@@ -3099,7 +3099,7 @@ test("result delivery identifies retired sessions and honors the disabled settin
           ? [
               {
                 type: "custom",
-                customType: "pi-herdsman-agent-context-retired",
+                customType: "omp-herdsman-agent-context-retired",
                 data: { sessionId: identity.piSessionId },
               },
             ]
@@ -3113,11 +3113,11 @@ test("result delivery identifies retired sessions and honors the disabled settin
       entries,
       exec: lifecycle.exec,
       sendMessage: (message) => {
-        if ((message as any).customType !== "pi-herdsman-agent-result") return;
+        if ((message as any).customType !== "omp-herdsman-agent-result") return;
         delivered = message;
         entries.push({
           message: {
-            customType: "pi-herdsman-agent-result",
+            customType: "omp-herdsman-agent-result",
             details: (message as any).details,
           },
         });
@@ -3202,10 +3202,10 @@ test("accepted result delivery survives session identity failure in status guida
     entries,
     exec: leadExec(label, "working", DEFAULT_PI_SESSION_ID),
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result") {
+      if ((message as any).customType === "omp-herdsman-agent-result") {
         resultAttempts++;
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(resultState, REQUEST_ID),
         });
         identityLookupFailed = true;
@@ -3229,7 +3229,7 @@ test("accepted result delivery survives session identity failure in status guida
     assert.equal(
       pi.sent.some(
         (message: any) =>
-          message.customType === "pi-herdsman-agent-result" &&
+          message.customType === "omp-herdsman-agent-result" &&
           message.details?.status === "failed",
       ),
       false,
@@ -3267,7 +3267,7 @@ test("result is removed after agent state reaches completed", async (t) => {
     exec: lifecycle.exec,
     sendMessage: () => {
       entries.push({
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(activeState, REQUEST_ID),
       });
     },
@@ -3280,12 +3280,12 @@ test("result is removed after agent state reaches completed", async (t) => {
   const completed = managedState(label);
   completed.completedRequestId = REQUEST_ID;
   const delivered = pi.sentMessageCalls.filter(
-    ({ message }) => (message as any).customType === "pi-herdsman-agent-result",
+    ({ message }) => (message as any).customType === "omp-herdsman-agent-result",
   );
   assert.equal(delivered.length, 1);
   const durableResults = entries.filter(
     (entry: any) =>
-      entry.customType === "pi-herdsman-agent-result" &&
+      entry.customType === "omp-herdsman-agent-result" &&
       entry.details?.requestId === REQUEST_ID,
   );
   assert.equal(durableResults.length, 1);
@@ -3316,7 +3316,7 @@ test("result is removed after agent state reaches completed", async (t) => {
   assert.equal(
     pi.sentMessageCalls.filter(
       ({ message }) =>
-        (message as any).customType === "pi-herdsman-agent-result",
+        (message as any).customType === "omp-herdsman-agent-result",
     ).length,
     1,
   );
@@ -3331,7 +3331,7 @@ test("result is removed after agent state reaches completed", async (t) => {
   assert.equal(
     pi.sentMessageCalls.filter(
       ({ message }) =>
-        (message as any).customType === "pi-herdsman-agent-result",
+        (message as any).customType === "omp-herdsman-agent-result",
     ).length,
     1,
   );
@@ -3376,12 +3376,12 @@ test("live result cleanup keeps a later request owned by the mailbox", async (t)
       exec: lifecycle.exec,
       sendMessage: (message) => {
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(state, REQUEST_ID),
         });
         if (
           !secondRequestWritten &&
-          (message as any).customType === "pi-herdsman-agent-result"
+          (message as any).customType === "omp-herdsman-agent-result"
         ) {
           secondRequestWritten = true;
           writeRequest(mailbox, {
@@ -3475,12 +3475,12 @@ test("lost result cleanup keeps a later request owned by the mailbox", async (t)
       exec: cascadeExecutor([]).exec,
       sendMessage: (message) => {
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(state, REQUEST_ID),
         });
         if (
           !secondRequestWritten &&
-          (message as any).customType === "pi-herdsman-agent-result"
+          (message as any).customType === "omp-herdsman-agent-result"
         ) {
           secondRequestWritten = true;
           writeRequest(mailbox, {
@@ -3597,10 +3597,10 @@ test("parent cascade keeps a later parent request during result cleanup", async 
     exec: lifecycle.exec,
     sendMessage: (message) => {
       entries.push({
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(parent, REQUEST_ID),
       });
-      if ((message as any).customType === "pi-herdsman-agent-result")
+      if ((message as any).customType === "omp-herdsman-agent-result")
         writeRequest(parentMailbox, {
           version: 4,
           runId: parent.runId,
@@ -3684,7 +3684,7 @@ test("completed lost parent cleanup resolves descendants before its mailbox", as
       exec: lifecycle.exec,
       sendMessage: (message) => {
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: resultEntryDetails(parent, REQUEST_ID),
         });
         void message;
@@ -3913,7 +3913,7 @@ test("automatic close invokes the exact lifecycle only after live identity proof
     },
     sendMessage: () => {
       entries.push({
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(resultState, REQUEST_ID),
       });
     },
@@ -3942,7 +3942,7 @@ test("automatic close invokes the exact lifecycle only after live identity proof
 
 test("managed child automatic cleanup respects the parent delegation lock", async () => {
   setAgentEnvironment("cleanup-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("cleanup-parent");
   const child = {
     ...managedState(
@@ -3976,11 +3976,11 @@ test("managed child automatic cleanup respects the parent delegation lock", asyn
   const entries: unknown[] = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ];
@@ -3989,9 +3989,9 @@ test("managed child automatic cleanup respects the parent delegation lock", asyn
     entries,
     exec: lifecycle.exec,
     sendMessage: (message) => {
-      if ((message as any).customType === "pi-herdsman-agent-result")
+      if ((message as any).customType === "omp-herdsman-agent-result")
         entries.push({
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           details: (message as any).details,
         });
     },
@@ -4293,7 +4293,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: parent.piSessionId,
           definition: "parent",
@@ -4308,7 +4308,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: child.piSessionId,
           definition: "agent",
@@ -4323,7 +4323,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
     entries: [
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: unrelated.piSessionId,
           definition: "agent",
@@ -4386,9 +4386,9 @@ test("delegation parent notifies only its direct stale child", async (t) => {
       };
     return baseExec(command, args, options);
   };
-  process.env.PI_HERDSMAN_RUN_ID = parent.runId;
-  process.env.PI_HERDSMAN_OWNER_SESSION_ID = LEAD_SESSION_ID;
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_RUN_ID = parent.runId;
+  process.env.OMP_HERDSMAN_OWNER_SESSION_ID = LEAD_SESSION_ID;
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parentPi = fakePi({
     exec,
     sendMessage: (message) => sent.push(message),
@@ -4397,11 +4397,11 @@ test("delegation parent notifies only its direct stale child", async (t) => {
   const parentContext = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -4416,7 +4416,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
     `parent publishes one direct-child advisory: ${JSON.stringify(parentPi.calls)}`,
   );
   const advisory = sent[0] as any;
-  assert.equal(advisory.customType, "pi-herdsman-agent-stale");
+  assert.equal(advisory.customType, "omp-herdsman-agent-stale");
   assert.match(
     advisory.content,
     /Agent stale-child has had no qualifying execution progress/,
@@ -4463,7 +4463,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
   t.mock.timers.tick(5 * 60_000);
   await new Promise((resolve) => setImmediate(resolve));
   const reminder = parentPi.sent.find(
-    (message: any) => message.customType === "pi-herdsman-agent-stale",
+    (message: any) => message.customType === "omp-herdsman-agent-stale",
   ) as any;
   assert.ok(reminder);
   assert.equal(diagnosticReads, 1);
@@ -4505,7 +4505,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
   assert.equal(diagnosticReads, 3);
   assert.equal(
     parentPi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-stale",
+      (message: any) => message.customType === "omp-herdsman-agent-stale",
     ).length,
     0,
   );
@@ -4525,7 +4525,7 @@ test("delegation parent notifies only its direct stale child", async (t) => {
   assert.deepEqual(
     rootSent
       .filter(
-        (message: any) => message.customType === "pi-herdsman-agent-stale",
+        (message: any) => message.customType === "omp-herdsman-agent-stale",
       )
       .map((message: any) => message.details.agentLabel),
     [],
@@ -4562,7 +4562,7 @@ test("stale diagnostic failure still publishes advisory without recovery", async
     await pi.events.get("session_start")![0](undefined, fakeContext());
     await new Promise((resolve) => setImmediate(resolve));
     const staleMessages = pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-stale",
+      (message: any) => message.customType === "omp-herdsman-agent-stale",
     ) as any[];
     assert.equal(staleMessages.length, 1);
     assert.match(
@@ -4626,7 +4626,7 @@ test("stale diagnostic failure refreshes physical state before publication", asy
     assert.equal(snapshots, 2, "failure triggers a fresh physical snapshot");
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-stale",
+        (message: any) => message.customType === "omp-herdsman-agent-stale",
       ).length,
       0,
       "a no-longer-working target must not publish stale-working attention",
@@ -4682,13 +4682,13 @@ test("stale working parents remain visible while waiting parents project blocked
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-stale",
+        (message: any) => message.customType === "omp-herdsman-agent-stale",
       ).length,
       1,
       "a stale working parent must notify its own owner even with an active child",
     );
     const stale = pi.sent.find(
-      (message: any) => message.customType === "pi-herdsman-agent-stale",
+      (message: any) => message.customType === "omp-herdsman-agent-stale",
     ) as any;
     assert.equal(stale.details.agentLabel, parent.agentLabel);
     assert.equal(stale.details.ownerSessionId, LEAD_SESSION_ID);
@@ -4713,7 +4713,7 @@ test("stale working parents remain visible while waiting parents project blocked
     );
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-stale",
+        (message: any) => message.customType === "omp-herdsman-agent-stale",
       ).length,
       0,
       "a waiting parent must not receive a stale advisory",
@@ -4752,7 +4752,7 @@ test("health scanner alerts true runtime blocking", async () => {
   await pi.events.get("session_start")![0](undefined, fakeContext());
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].customType, "pi-herdsman-agent-attention");
+  assert.equal(sent[0].customType, "omp-herdsman-agent-attention");
   assert.equal(sent[0].details.reason, "blocked");
   assert.match(sent[0].content, /no Herdsman ask_owner question exists/);
   pi.events.get("session_shutdown")?.[0]();
@@ -4785,7 +4785,7 @@ test("settling alone does not trigger generic health attention", async () => {
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.some(
-      (message: any) => message.customType === "pi-herdsman-agent-attention",
+      (message: any) => message.customType === "omp-herdsman-agent-attention",
     ),
     false,
   );
@@ -4876,7 +4876,7 @@ test("result errors wake the direct owner with durable recovery evidence", async
   await pi.events.get("session_start")![0](undefined, fakeContext());
   await new Promise((resolve) => setImmediate(resolve));
   const attention = pi.sent.find(
-    (message: any) => message.customType === "pi-herdsman-agent-attention",
+    (message: any) => message.customType === "omp-herdsman-agent-attention",
   ) as any;
   assert.equal(attention?.details.reason, "result_error");
   assert.equal(attention?.details.requestId, REQUEST_ID);
@@ -4912,12 +4912,12 @@ test("physical unknown attention is one-shot and fail-closed", async (t) => {
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-attention",
+      (message: any) => message.customType === "omp-herdsman-agent-attention",
     ).length,
     1,
   );
   const attention = pi.sent.find(
-    (message: any) => message.customType === "pi-herdsman-agent-attention",
+    (message: any) => message.customType === "omp-herdsman-agent-attention",
   ) as any;
   assert.equal(attention.details.reason, "unknown");
   assert.deepEqual(attention.details.availableActions, []);
@@ -4926,7 +4926,7 @@ test("physical unknown attention is one-shot and fail-closed", async (t) => {
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-attention",
+      (message: any) => message.customType === "omp-herdsman-agent-attention",
     ).length,
     1,
   );
@@ -4961,7 +4961,7 @@ test("delivered owner asks repeat without duplicating first delivery", async (t)
     createdAt: now,
   };
   writeAsk(mailbox, ask);
-  const entries = [{ customType: "pi-herdsman-agent-ask", details: ask }];
+  const entries = [{ customType: "omp-herdsman-agent-ask", details: ask }];
   const pi = fakePi({
     entries,
     persistMessages: true,
@@ -4979,7 +4979,7 @@ test("delivered owner asks repeat without duplicating first delivery", async (t)
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-ask",
+      (message: any) => message.customType === "omp-herdsman-agent-ask",
     ).length,
     0,
   );
@@ -4987,7 +4987,7 @@ test("delivered owner asks repeat without duplicating first delivery", async (t)
   t.mock.timers.tick(30_000);
   await new Promise((resolve) => setImmediate(resolve));
   const reminders = pi.sent.filter(
-    (message: any) => message.customType === "pi-herdsman-agent-ask",
+    (message: any) => message.customType === "omp-herdsman-agent-ask",
   ) as any[];
   assert.equal(reminders.length, 1);
   assert.equal(reminders[0].details.askId, ask.askId);
@@ -5005,7 +5005,7 @@ test("delivered owner asks repeat without duplicating first delivery", async (t)
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-ask",
+      (message: any) => message.customType === "omp-herdsman-agent-ask",
     ).length,
     1,
   );
@@ -5075,7 +5075,7 @@ test("old unacknowledged requests get attention without being resubmitted", asyn
   await pi.events.get("session_start")![0](undefined, fakeContext());
   await new Promise((resolve) => setImmediate(resolve));
   const attention = pi.sent.find(
-    (message: any) => message.customType === "pi-herdsman-agent-attention",
+    (message: any) => message.customType === "omp-herdsman-agent-attention",
   ) as any;
   assert.equal(attention?.details.reason, "handoff");
   assert.equal(attention?.details.requestId, REQUEST_ID);
@@ -5134,7 +5134,7 @@ test("health reconciliation publishes at most one attention per scan", async (t)
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-attention",
+      (message: any) => message.customType === "omp-herdsman-agent-attention",
     ).length,
     1,
   );
@@ -5142,7 +5142,7 @@ test("health reconciliation publishes at most one attention per scan", async (t)
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(
     pi.sent.filter(
-      (message: any) => message.customType === "pi-herdsman-agent-attention",
+      (message: any) => message.customType === "omp-herdsman-agent-attention",
     ).length,
     2,
   );
@@ -5235,7 +5235,7 @@ test("lost managed agents remain visible and repeatedly notify their owner", asy
     ]);
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-lost",
+        (message: any) => message.customType === "omp-herdsman-agent-lost",
       ).length,
       1,
     );
@@ -5259,7 +5259,7 @@ test("lost managed agents remain visible and repeatedly notify their owner", asy
       await new Promise<void>((resolve) => setImmediate(resolve));
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-lost",
+        (message: any) => message.customType === "omp-herdsman-agent-lost",
       ).length,
       1,
     );
@@ -5269,7 +5269,7 @@ test("lost managed agents remain visible and repeatedly notify their owner", asy
       await new Promise<void>((resolve) => setImmediate(resolve));
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-lost",
+        (message: any) => message.customType === "omp-herdsman-agent-lost",
       ).length,
       2,
     );
@@ -5289,7 +5289,7 @@ test("lost managed agents remain visible and repeatedly notify their owner", asy
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-lost",
+        (message: any) => message.customType === "omp-herdsman-agent-lost",
       ).length,
       2,
     );
@@ -5347,7 +5347,7 @@ test("lost parent health attention omits close when a descendant has an unread d
       await new Promise<void>((resolve) => setImmediate(resolve));
 
     const attention = pi.sent.find(
-      (message: any) => message.customType === "pi-herdsman-agent-lost",
+      (message: any) => message.customType === "omp-herdsman-agent-lost",
     ) as any;
     assert.equal(attention?.details.agentLabel, parent.agentLabel);
     assert.equal(attention?.details.availableActions.includes("close"), false);

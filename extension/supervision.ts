@@ -36,7 +36,7 @@ export function sessionLeadRoleState(
     .find(
       (candidate: any) =>
         candidate?.type === "custom" &&
-        candidate.customType === "pi-herdsman-role",
+        candidate.customType === "omp-herdsman-role",
     ) as any;
   if (!entry) return undefined;
   const data = entry.data;
@@ -54,7 +54,7 @@ export function sessionLeadRoleState(
     ) ||
     new Set(data.leadTools).size !== data.leadTools.length
   )
-    throw new Error("invalid pi-herdsman-role entry");
+    throw new Error("invalid omp-herdsman-role entry");
   return { role: data.role, leadTools: [...data.leadTools] };
 }
 
@@ -863,7 +863,7 @@ export async function drainCoordinationInbox(
         );
         await options.sendMessage(
           {
-            customType: `pi-herdsman-${record.kind}`,
+            customType: `omp-herdsman-${record.kind}`,
             content: deliveredMessageContent(record),
             display: true,
             details: {

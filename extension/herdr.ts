@@ -4,7 +4,7 @@ import {
   type ExecResult,
   type ExtensionAPI,
   type ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
+} from "@oh-my-pi/pi-coding-agent";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, realpathSync } from "node:fs";
 import { createConnection, type Socket } from "node:net";
@@ -99,13 +99,13 @@ const LIFECYCLE_SUBSCRIPTIONS = [
   { type: "tab.closed" },
   { type: "workspace.closed" },
 ] as const;
-const LIFECYCLE_SUBSCRIPTION_ID = "pi-herdsman:lifecycle";
+const LIFECYCLE_SUBSCRIPTION_ID = "omp-herdsman:lifecycle";
 const LIFECYCLE_RECONNECT_MS = 1_000;
 const MAX_EVENT_BUFFER_BYTES = 1024 * 1024;
 const HERDR_AGENT_STATE_EXTENSION = join(
   getAgentDir(),
   "extensions",
-  "herdr-agent-state.ts",
+  "herdr-omp-agent-state.ts",
 );
 function error(operation: string, message: string, details?: unknown): never {
   throw new OperationError({
@@ -367,9 +367,9 @@ export function structuredTopologyEnvironment(
   const validated = validateEnvironment(assignments);
   const owner = validated
     .find((assignment) =>
-      assignment.startsWith("PI_HERDSMAN_OWNER_SESSION_ID="),
+      assignment.startsWith("OMP_HERDSMAN_OWNER_SESSION_ID="),
     )
-    ?.slice("PI_HERDSMAN_OWNER_SESSION_ID=".length);
+    ?.slice("OMP_HERDSMAN_OWNER_SESSION_ID=".length);
   const forwardingSession =
     validated
       .find((assignment) =>
@@ -382,7 +382,7 @@ export function structuredTopologyEnvironment(
     "HERDR_WORKSPACE_ID",
     "HERDR_TAB_ID",
     "HERDR_PANE_ID",
-    "PI_HERDSMAN_WORKSPACE_ID",
+    "OMP_HERDSMAN_WORKSPACE_ID",
     "PI_SUBAGENT_CHILD",
     "PI_SUBAGENT_PARENT_SESSION",
   ]);
@@ -397,7 +397,7 @@ export function structuredTopologyEnvironment(
           `PI_SUBAGENT_PARENT_SESSION=${forwardingSession}`,
         ]
       : []),
-    `PI_HERDSMAN_WORKSPACE_ID=${workspaceId}`,
+    `OMP_HERDSMAN_WORKSPACE_ID=${workspaceId}`,
   ];
 }
 function alias(workspaceId: string, label: string, runId: string): string {
@@ -666,9 +666,9 @@ export function leadMetadataArgs(metadata: LeadMetadata): string[] {
     "report-metadata",
     metadata.paneId,
     "--source",
-    "pi-herdsman:lead",
+    "omp-herdsman:lead",
     "--title",
-    metadata.name?.trim() || "Pi Herdsman lead",
+    metadata.name?.trim() || "OMP Herdsman lead",
     "--token",
     "pi_herdsman_role=lead",
   ];
@@ -1228,7 +1228,7 @@ export async function startHerdrAgent(
             "start",
             attempt.herdrAgent,
             "--kind",
-            "pi",
+            "omp",
             "--pane",
             paneId,
             "--timeout",
@@ -1457,7 +1457,7 @@ async function waitForShellMarker(
       error(operation, `pane ${paneId} shell readiness deadline exhausted`);
     return remaining;
   };
-  const marker = `__PI_HERDSMAN_READY_${randomUUID()}__`;
+  const marker = `__OMP_HERDSMAN_READY_${randomUUID()}__`;
   await runHerdr(pi, ctx, ["pane", "run", paneId, `echo ${marker}`], {
     signal,
     timeout: timeout(),
@@ -1609,7 +1609,7 @@ export function sessionIdentity(
   };
   const kind = session.kind;
   const sessionValue = session.value;
-  if (session.source !== "herdr:pi" || session.agent !== "pi") return undefined;
+  if (session.source !== "herdr:omp" || session.agent !== "omp") return undefined;
   return (kind === "id" || kind === "path") &&
     typeof sessionValue === "string" &&
     sessionValue.length > 0

@@ -7,8 +7,8 @@ let deleteBeforeRead = false;
 let failConfigRename = false;
 let configPath: string | undefined;
 const testAgentDir =
-  process.env.PI_CODING_AGENT_DIR ?? "/tmp/pi-herdsman-config-test";
-mock.module("@earendil-works/pi-coding-agent", {
+  process.env.PI_CODING_AGENT_DIR ?? "/tmp/omp-herdsman-config-test";
+mock.module("@oh-my-pi/pi-coding-agent", {
   namedExports: {
     getAgentDir: () => testAgentDir,
   },
@@ -127,7 +127,7 @@ test("invalid values, malformed JSON, non-object roots, and unknown keys fail cl
       "mailboxPayloadLimitBytes",
     ],
     ['{"contextRetirement":"false"}', "contextRetirement"],
-    ["{", "Invalid Pi Herdsman config JSON"],
+    ["{", "Invalid OMP Herdsman config JSON"],
     ["[]", "root must be an object"],
     ['{"typo":true}', "unknown field typo"],
   ] as const) {
@@ -192,12 +192,12 @@ test("failed atomic replacement preserves the old config and cleans its temporar
 
 test("config updates honor the shared process lock", () => {
   const release = claimProcessLock(`${herdsmanConfigPath()}.lock`, {
-    name: "Pi Herdsman config update",
+    name: "OMP Herdsman config update",
   });
   try {
     assert.throws(
       () => updateConfig("spawnPlacement", "split"),
-      /Pi Herdsman config update is in progress/,
+      /OMP Herdsman config update is in progress/,
     );
   } finally {
     release();

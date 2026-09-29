@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { createServer, type Socket } from "node:net";
 import test from "node:test";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "@oh-my-pi/pi-coding-agent";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -47,22 +47,22 @@ import { herdsmanTempRoot } from "./storage.ts";
 test("nested topology keeps the Herdr workspace authoritative", () => {
   assert.deepEqual(
     structuredTopologyEnvironment("live-workspace", [
-      "PI_HERDSMAN_WORKSPACE_ID=stale-workspace",
+      "OMP_HERDSMAN_WORKSPACE_ID=stale-workspace",
       "HERDR_SOCKET_PATH=stale-socket",
       "HERDR_ENV=stale-env",
       "HERDR_WORKSPACE_ID=stale-herdr-workspace",
       "HERDR_TAB_ID=stale-tab",
       "HERDR_PANE_ID=stale-pane",
-      "PI_HERDSMAN_LABEL=task20_nested",
+      "OMP_HERDSMAN_LABEL=task20_nested",
     ]),
     [
-      "PI_HERDSMAN_LABEL=task20_nested",
-      "PI_HERDSMAN_WORKSPACE_ID=live-workspace",
+      "OMP_HERDSMAN_LABEL=task20_nested",
+      "OMP_HERDSMAN_WORKSPACE_ID=live-workspace",
     ],
   );
 
   const env = structuredTopologyEnvironment("workspace", [
-    "PI_HERDSMAN_OWNER_SESSION_ID=implementer-session",
+    "OMP_HERDSMAN_OWNER_SESSION_ID=implementer-session",
     "PI_SUBAGENT_CHILD=stale",
     "PI_SUBAGENT_PARENT_SESSION=lead-session",
     "PI_SUBAGENT_PARENT_SESSION=stale-parent",
@@ -73,17 +73,17 @@ test("nested topology keeps the Herdr workspace authoritative", () => {
   assert.ok(!env.includes("PI_SUBAGENT_CHILD=stale"));
   assert.ok(!env.includes("PI_SUBAGENT_PARENT_SESSION=stale-parent"));
   assert.ok(env.includes("EXTRA=value"));
-  assert.ok(env.includes("PI_HERDSMAN_OWNER_SESSION_ID=implementer-session"));
+  assert.ok(env.includes("OMP_HERDSMAN_OWNER_SESSION_ID=implementer-session"));
 
   assert.deepEqual(
     structuredTopologyEnvironment("workspace", [
-      "PI_HERDSMAN_OWNER_SESSION_ID=owner-session",
+      "OMP_HERDSMAN_OWNER_SESSION_ID=owner-session",
     ]),
     [
-      "PI_HERDSMAN_OWNER_SESSION_ID=owner-session",
+      "OMP_HERDSMAN_OWNER_SESSION_ID=owner-session",
       "PI_SUBAGENT_CHILD=1",
       "PI_SUBAGENT_PARENT_SESSION=owner-session",
-      "PI_HERDSMAN_WORKSPACE_ID=workspace",
+      "OMP_HERDSMAN_WORKSPACE_ID=workspace",
     ],
   );
 });
@@ -92,12 +92,12 @@ test("nested topology forwards the controller agent directory when configured", 
   assert.ok(
     structuredTopologyEnvironment("workspace", [
       "PI_CODING_AGENT_DIR=/controller/agent-data",
-      "PI_HERDSMAN_OWNER_SESSION_ID=owner-session",
+      "OMP_HERDSMAN_OWNER_SESSION_ID=owner-session",
     ]).includes("PI_CODING_AGENT_DIR=/controller/agent-data"),
   );
   assert.ok(
     !structuredTopologyEnvironment("workspace", [
-      "PI_HERDSMAN_OWNER_SESSION_ID=owner-session",
+      "OMP_HERDSMAN_OWNER_SESSION_ID=owner-session",
     ]).some((assignment) => assignment.startsWith("PI_CODING_AGENT_DIR=")),
   );
 });
@@ -188,8 +188,8 @@ test("session snapshot accepts only coherent pane and agent inventories", async 
 test("lifecycle watcher subscribes, reconciles, reconnects, and aborts", async () => {
   const socketPath =
     globalThis.process.platform === "win32"
-      ? `\\\\.\\pipe\\pi-herdsman-${randomUUID()}`
-      : join(tmpdir(), `pi-herdsman-${randomUUID()}.sock`);
+      ? `\\\\.\\pipe\\omp-herdsman-${randomUUID()}`
+      : join(tmpdir(), `omp-herdsman-${randomUUID()}.sock`);
   const server = createServer();
   const sockets = new Set<Socket>();
   let connections = 0;
@@ -266,7 +266,7 @@ test("lead metadata is display-only and carries current name and ask", () => {
       "report-metadata",
       "root-pane",
       "--source",
-      "pi-herdsman:lead",
+      "omp-herdsman:lead",
       "--title",
       "API root",
       "--token",
@@ -1094,7 +1094,7 @@ test("start injects mandatory extensions before definition args and configures t
   const environment = globalThis.process.env;
   const previousWorkspace = environment.HERDR_WORKSPACE_ID;
   environment.HERDR_WORKSPACE_ID = "root-workspace";
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-agent-space-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-agent-space-"));
   const mailbox = join(cwd, "mailbox with $dollar 'quote' `backtick`");
   const definitionExtension = join(cwd, "definition-extension.ts");
   const processInfo = {
@@ -1104,13 +1104,13 @@ test("start injects mandatory extensions before definition args and configures t
     foreground_processes: [{ pid: 12, argv0: "/bin/zsh" }],
   };
   const contract = [
-    `PI_HERDSMAN_MAILBOX=${mailbox}`,
-    "PI_HERDSMAN_RUN_ID=run-id",
-    "PI_HERDSMAN_OWNER_SESSION_ID=owner-session",
+    `OMP_HERDSMAN_MAILBOX=${mailbox}`,
+    "OMP_HERDSMAN_RUN_ID=run-id",
+    "OMP_HERDSMAN_OWNER_SESSION_ID=owner-session",
     "PI_SUBAGENT_PARENT_SESSION=lead-session",
-    "PI_HERDSMAN_LABEL=agent",
-    "PI_HERDSMAN_WORKSPACE_ID=agent-workspace",
-    "PI_HERDSMAN_AGENT_DEFINITION=agent",
+    "OMP_HERDSMAN_LABEL=agent",
+    "OMP_HERDSMAN_WORKSPACE_ID=agent-workspace",
+    "OMP_HERDSMAN_AGENT_DEFINITION=agent",
     "PI_CODING_AGENT_DIR=/controller/agent-data",
     "PI_OFFLINE=1",
   ];
@@ -1239,18 +1239,18 @@ test("start injects mandatory extensions before definition args and configures t
     tabCreate
       .flatMap((arg, index) => (arg === "--env" ? [tabCreate[index + 1]!] : []))
       .filter((arg) =>
-        /^(PI_HERDSMAN_(MAILBOX|RUN_ID|OWNER_SESSION_ID|LABEL|WORKSPACE_ID|AGENT_DEFINITION)|PI_CODING_AGENT_DIR|PI_SUBAGENT_PARENT_SESSION|PI_OFFLINE)=/.test(
+        /^(OMP_HERDSMAN_(MAILBOX|RUN_ID|OWNER_SESSION_ID|LABEL|WORKSPACE_ID|AGENT_DEFINITION)|PI_CODING_AGENT_DIR|PI_SUBAGENT_PARENT_SESSION|PI_OFFLINE)=/.test(
           arg,
         ),
       ),
     [
       ...contract.filter(
         (arg) =>
-          !arg.startsWith("PI_HERDSMAN_WORKSPACE_ID=") &&
+          !arg.startsWith("OMP_HERDSMAN_WORKSPACE_ID=") &&
           !arg.startsWith("PI_SUBAGENT_PARENT_SESSION="),
       ),
       "PI_SUBAGENT_PARENT_SESSION=lead-session",
-      "PI_HERDSMAN_WORKSPACE_ID=root-workspace",
+      "OMP_HERDSMAN_WORKSPACE_ID=root-workspace",
     ],
   );
   assert.deepEqual(startArgs.slice(startArgs.indexOf("--") + 1), [
@@ -1287,16 +1287,16 @@ test("start injects mandatory extensions before definition args and configures t
   const markerRun = calls.find(
     (args) => args[0] === "pane" && args[1] === "run",
   )!;
-  assert.match(markerRun[3]!, /^echo __PI_HERDSMAN_READY_[0-9a-f-]{36}__$/);
+  assert.match(markerRun[3]!, /^echo __OMP_HERDSMAN_READY_[0-9a-f-]{36}__$/);
   const markerWait = calls.find(
     (args) => args[0] === "pane" && args[1] === "wait-output",
   )!;
   assert.match(
     markerWait[markerWait.indexOf("--regex") + 1]!,
-    /^\^__PI_HERDSMAN_READY_[0-9a-f-]{36}__\$$/,
+    /^\^__OMP_HERDSMAN_READY_[0-9a-f-]{36}__\$$/,
   );
   const marker = markerRun[3]!.match(
-    /(__PI_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
+    /(__OMP_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
   )![1];
   assert.equal(markerWait[markerWait.indexOf("--regex") + 1], `^${marker}$`);
   assert.ok(
@@ -1325,7 +1325,7 @@ async function executeFailedStart(
   const previousWorkspace = environment.HERDR_WORKSPACE_ID;
   const originalDateNow = Date.now;
   environment.HERDR_WORKSPACE_ID = "root-workspace";
-  const cwd = "/tmp/pi-herdsman-agent";
+  const cwd = "/tmp/omp-herdsman-agent";
   const calls: Array<{ args: string[]; timeout?: number }> = [];
   const response = (value: unknown) => ({
     code: 0,
@@ -1761,9 +1761,9 @@ test("invalid environment assignments are rejected before topology mutation", as
 
   try {
     for (const env of [
-      "PI_HERDSMAN_BAD-KEY=value",
-      "PI_HERDSMAN_MAILBOX=line\r\nbreak",
-      "PI_HERDSMAN_MAILBOX=has\0nul",
+      "OMP_HERDSMAN_BAD-KEY=value",
+      "OMP_HERDSMAN_MAILBOX=line\r\nbreak",
+      "OMP_HERDSMAN_MAILBOX=has\0nul",
     ]) {
       await assert.rejects(
         startHerdrAgent(pi, { cwd: "/tmp" } as any, {
@@ -1787,7 +1787,7 @@ test("foreground projection does not veto a ready shell before agent start", asy
   const environment = globalThis.process.env;
   const previousWorkspace = environment.HERDR_WORKSPACE_ID;
   environment.HERDR_WORKSPACE_ID = "root-workspace";
-  const cwd = "/tmp/pi-herdsman-agent";
+  const cwd = "/tmp/omp-herdsman-agent";
   const calls: string[][] = [];
   let paneSplit = false;
   const response = (value: unknown) => ({
@@ -1852,7 +1852,7 @@ test("foreground projection does not veto a ready shell before agent start", asy
       runId: "run-id",
       cwd,
       placement: { kind: "tab", label: "agents", tabId: "tab-1" },
-      env: ["PI_HERDSMAN_MAILBOX=/tmp/mailbox"],
+      env: ["OMP_HERDSMAN_MAILBOX=/tmp/mailbox"],
     });
     assert.equal(started.paneId, "pane-2");
   } finally {
@@ -1872,11 +1872,11 @@ test("foreground projection does not veto a ready shell before agent start", asy
     (args) => args[0] === "pane" && args[1] === "split",
   )!;
   assert.equal(splitCall.includes("--env"), true);
-  assert.equal(splitCall.includes("PI_HERDSMAN_MAILBOX=/tmp/mailbox"), true);
+  assert.equal(splitCall.includes("OMP_HERDSMAN_MAILBOX=/tmp/mailbox"), true);
   assert.equal(splitCall.includes("HERDR_ENV=1"), false);
   assert.equal(splitCall.includes("HERDR_WORKSPACE_ID=root-workspace"), false);
   assert.equal(
-    splitCall.includes("PI_HERDSMAN_WORKSPACE_ID=root-workspace"),
+    splitCall.includes("OMP_HERDSMAN_WORKSPACE_ID=root-workspace"),
     true,
   );
 });
@@ -1944,7 +1944,7 @@ test("fresh panes wait for shell and pane metadata before agent start", async ()
           (item) => item[0] === "pane" && item[1] === "run",
         )!;
         const marker = String(run[3]).match(
-          /(__PI_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
+          /(__OMP_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
         )![1];
         assert.equal(args[args.indexOf("--regex") + 1], `^${marker}$`);
         return response({});
@@ -1973,7 +1973,7 @@ test("fresh panes wait for shell and pane metadata before agent start", async ()
       runId: "run-id",
       cwd,
       placement: { kind: "tab", label: "agents" },
-      env: ["PI_HERDSMAN_MAILBOX=/tmp/mailbox"],
+      env: ["OMP_HERDSMAN_MAILBOX=/tmp/mailbox"],
     });
   } finally {
     if (previousWorkspace === undefined) delete environment.HERDR_WORKSPACE_ID;
@@ -2225,7 +2225,7 @@ async function startAgentCase(
             (item) => item[0] === "pane" && item[1] === "run",
           )!;
           const marker = String(run[3]).match(
-            /(__PI_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
+            /(__OMP_HERDSMAN_READY_[0-9a-f-]{36}__)$/,
           )![1];
           const matchIndex = args.indexOf("--regex");
           assert.deepEqual(args.slice(matchIndex, matchIndex + 2), [
@@ -2234,7 +2234,7 @@ async function startAgentCase(
           ]);
           return {
             code: 1,
-            stdout: "__PI_HERDSMAN_READY_wrong__ unrelated terminal text",
+            stdout: "__OMP_HERDSMAN_READY_wrong__ unrelated terminal text",
             stderr: "marker did not match",
           };
         }
@@ -2591,7 +2591,7 @@ async function placementCalls(config: {
   };
   const workspaceId = "workspace-1";
   const tabId = "tab-1";
-  const cwd = mkdtempSync(join(tmpdir(), "pi-herdsman-placement-agent-"));
+  const cwd = mkdtempSync(join(tmpdir(), "omp-herdsman-placement-agent-"));
   environment.HERDR_WORKSPACE_ID = workspaceId;
   if (config.placement === "split") {
     environment.HERDR_TAB_ID = "stale-tab";
@@ -2921,7 +2921,7 @@ test("preserving stop rejects malformed session identity observations", async ()
 });
 
 test("session matching keeps id and canonical path observations kind-aware", () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-session-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-session-"));
   const path = join(root, "agent-session.jsonl");
   const alias = join(root, "alias-session.jsonl");
   const other = join(root, "other-session.jsonl");
@@ -3004,7 +3004,7 @@ test("session matching keeps id and canonical path observations kind-aware", () 
 });
 
 test("inspection matches canonical native path identities and rejects missing paths", async () => {
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-inspection-session-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-inspection-session-"));
   const path = join(root, "agent-session.jsonl");
   const alias = join(root, "alias-session.jsonl");
   const missing = join(root, "missing-session.jsonl");
@@ -3300,7 +3300,7 @@ test("completed agent shell transition closes the pane without stop keys", async
   );
   assert.match(
     calls.find((args) => args[0] === "pane" && args[1] === "run")?.[3] ?? "",
-    /^echo __PI_HERDSMAN_READY_[0-9a-f-]{36}__$/,
+    /^echo __OMP_HERDSMAN_READY_[0-9a-f-]{36}__$/,
   );
   assert.equal(
     calls.filter((args) => args[0] === "pane" && args[1] === "close").length,
@@ -3591,7 +3591,7 @@ test("rollback proves the boundary before keys and resources before close", asyn
   const environment = globalThis.process.env;
   const previousWorkspace = environment.HERDR_WORKSPACE_ID;
   environment.HERDR_WORKSPACE_ID = "workspace-1";
-  const root = mkdtempSync(join(tmpdir(), "pi-herdsman-rollback-session-"));
+  const root = mkdtempSync(join(tmpdir(), "omp-herdsman-rollback-session-"));
   const sessionPath = join(root, "missing-session.jsonl");
   const session = {
     source: "herdr:pi" as const,
@@ -4030,7 +4030,7 @@ test("run-scoped aliases are stable and distinct by incarnation", () => {
 });
 
 test("cwd comparisons accept equivalent symlink paths", () => {
-  const real = mkdtempSync(join(tmpdir(), "pi-herdsman-cwd-"));
+  const real = mkdtempSync(join(tmpdir(), "omp-herdsman-cwd-"));
   const link = `${real}-link`;
   try {
     symlinkSync(real, link);

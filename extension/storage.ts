@@ -1,5 +1,5 @@
 import { tmpdir } from "node:os";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "@oh-my-pi/pi-coding-agent";
 import { join } from "node:path";
 
 const RESULT_PREFIX = "result:";
@@ -7,7 +7,7 @@ const RESULT_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function herdsmanDataRoot(): string {
-  return join(getAgentDir(), "pi-herdsman");
+  return join(getAgentDir(), "omp-herdsman");
 }
 
 export function herdsmanConfigPath(): string {
@@ -15,7 +15,7 @@ export function herdsmanConfigPath(): string {
 }
 
 export function herdsmanTempRoot(): string {
-  return join(tmpdir(), `pi-herdsman-${process.getuid?.() ?? "user"}`);
+  return join(tmpdir(), `omp-herdsman-${process.getuid?.() ?? "user"}`);
 }
 
 function validateResultId(requestId: string): void {

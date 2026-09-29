@@ -69,7 +69,7 @@ function assertWidgetContent(content: unknown): void {
 }
 export const realFs = await import("node:fs");
 export const testTmpRoot = realFs.mkdtempSync(
-  join(tmpdir(), "pi-herdsman-test-"),
+  join(tmpdir(), "omp-herdsman-test-"),
 );
 process.env.TMPDIR = testTmpRoot;
 const {
@@ -77,10 +77,10 @@ const {
   fuzzyFilter: tuiFuzzyFilter,
   matchesKey: tuiMatchesKey,
   visibleWidth: tuiVisibleWidth,
-} = await import("@earendil-works/pi-tui");
+} = await import("@oh-my-pi/pi-tui");
 export { tuiVisibleWidth };
 export const PI_AGENT_ROOT = realFs.mkdtempSync(
-  join(tmpdir(), "pi-herdsman-pi-agent-"),
+  join(tmpdir(), "omp-herdsman-pi-agent-"),
 );
 process.env.PI_CODING_AGENT_DIR = PI_AGENT_ROOT;
 export const PI_AGENTS_DIR = join(PI_AGENT_ROOT, "agents");
@@ -96,7 +96,7 @@ const {
   parseFrontmatter: nativeParseFrontmatter,
   parseSessionEntries: nativeParseSessionEntries,
   truncateTail: nativeTruncateTail,
-} = await import("@earendil-works/pi-coding-agent");
+} = await import("@oh-my-pi/pi-coding-agent");
 after(() => realFs.rmSync(testTmpRoot, { recursive: true, force: true }));
 mock.module("node:fs", {
   namedExports: {
@@ -105,7 +105,7 @@ mock.module("node:fs", {
     closeSync: realFs.closeSync,
     chmodSync: realFs.chmodSync,
     existsSync: (path: string) => {
-      if (path === join(PI_AGENT_ROOT, "pi-herdsman", "config.json"))
+      if (path === join(PI_AGENT_ROOT, "omp-herdsman", "config.json"))
         configReadHook?.();
       return realFs.existsSync(path);
     },
@@ -116,7 +116,7 @@ mock.module("node:fs", {
       return realFs.openSync(...args);
     },
     readFileSync: (...args: any[]) => {
-      if (args[0] === join(PI_AGENT_ROOT, "pi-herdsman", "config.json"))
+      if (args[0] === join(PI_AGENT_ROOT, "omp-herdsman", "config.json"))
         configReadHook?.();
       if (
         typeof args[0] === "string" &&
@@ -190,7 +190,7 @@ export const {
   writeAgentState,
 } = await import("./mailbox.ts");
 
-mock.module("@earendil-works/pi-coding-agent", {
+mock.module("@oh-my-pi/pi-coding-agent", {
   namedExports: {
     DynamicBorder: class {
       private readonly color: (text: string) => string;
@@ -252,7 +252,7 @@ mock.module("@earendil-works/pi-coding-agent", {
             session?.entries ?? [
               {
                 type: "custom",
-                customType: "pi-herdsman-agent-definition",
+                customType: "omp-herdsman-agent-definition",
                 data: {
                   sessionId: session?.id ?? DEFAULT_PI_SESSION_ID,
                   definition: "agent",
@@ -265,7 +265,7 @@ mock.module("@earendil-works/pi-coding-agent", {
             session?.entries ?? [
               {
                 type: "custom",
-                customType: "pi-herdsman-agent-definition",
+                customType: "omp-herdsman-agent-definition",
                 data: {
                   sessionId: session?.id ?? DEFAULT_PI_SESSION_ID,
                   definition: "agent",
@@ -278,7 +278,7 @@ mock.module("@earendil-works/pi-coding-agent", {
     },
   },
 });
-mock.module("@earendil-works/pi-tui", {
+mock.module("@oh-my-pi/pi-tui", {
   namedExports: {
     Container: class {
       children: any[] = [];
@@ -423,7 +423,7 @@ mock.module("@earendil-works/pi-tui", {
     visibleWidth: tuiVisibleWidth,
   },
 });
-mock.module("@earendil-works/pi-ai", {
+mock.module("@oh-my-pi/pi-ai", {
   namedExports: {
     contentText: (
       content: string | readonly { type: string; text: string }[],
@@ -823,7 +823,7 @@ export function stopSummary(pi: ReturnType<typeof fakePi>): string {
     .reverse()
     .find(
       (candidate: any) =>
-        candidate?.message?.customType === "pi-herdsman-stop-summary",
+        candidate?.message?.customType === "omp-herdsman-stop-summary",
     )?.message as { details?: { summary?: unknown } } | undefined;
   return typeof message?.details?.summary === "string"
     ? message.details.summary
@@ -845,13 +845,13 @@ export function setLeadEnvironment(): void {
   process.env.HERDR_ENV = "1";
   process.env.HERDR_WORKSPACE_ID = WORKSPACE;
   for (const key of [
-    "PI_HERDSMAN_MAILBOX",
-    "PI_HERDSMAN_RUN_ID",
-    "PI_HERDSMAN_OWNER_SESSION_ID",
-    "PI_HERDSMAN_LABEL",
-    "PI_HERDSMAN_WORKSPACE_ID",
-    "PI_HERDSMAN_AGENT_DEFINITION",
-    "PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS",
+    "OMP_HERDSMAN_MAILBOX",
+    "OMP_HERDSMAN_RUN_ID",
+    "OMP_HERDSMAN_OWNER_SESSION_ID",
+    "OMP_HERDSMAN_LABEL",
+    "OMP_HERDSMAN_WORKSPACE_ID",
+    "OMP_HERDSMAN_AGENT_DEFINITION",
+    "OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS",
     "HERDR_PANE_ID",
     "HERDR_SOCKET_PATH",
   ])
@@ -877,18 +877,18 @@ export function setAgentEnvironment(
   const mailbox = agentMailboxPath(workspace, label);
   process.env.HERDR_ENV = "1";
   process.env.HERDR_WORKSPACE_ID = workspace;
-  process.env.PI_HERDSMAN_MAILBOX = mailbox;
-  process.env.PI_HERDSMAN_RUN_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-  process.env.PI_HERDSMAN_OWNER_SESSION_ID =
+  process.env.OMP_HERDSMAN_MAILBOX = mailbox;
+  process.env.OMP_HERDSMAN_RUN_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  process.env.OMP_HERDSMAN_OWNER_SESSION_ID =
     "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-  process.env.PI_HERDSMAN_LABEL = label;
-  process.env.PI_HERDSMAN_WORKSPACE_ID = workspace;
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "agent";
+  process.env.OMP_HERDSMAN_LABEL = label;
+  process.env.OMP_HERDSMAN_WORKSPACE_ID = workspace;
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "agent";
   process.env.HERDR_PANE_ID = "registered-pane";
   if (allowedAgentDefinitions === undefined)
-    delete process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS;
+    delete process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS;
   else
-    process.env.PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify(
+    process.env.OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS = JSON.stringify(
       allowedAgentDefinitions,
     );
   resetAgentMailbox(mailbox);
@@ -1582,10 +1582,10 @@ export function delegatedLifecycleExecutor(
         };
       }
       if (args[0] === "agent" && args[1] === "start") {
-        const label = paneEnvironment.PI_HERDSMAN_LABEL;
-        const runId = paneEnvironment.PI_HERDSMAN_RUN_ID;
-        const ownerSessionId = paneEnvironment.PI_HERDSMAN_OWNER_SESSION_ID;
-        const workspaceId = paneEnvironment.PI_HERDSMAN_WORKSPACE_ID;
+        const label = paneEnvironment.OMP_HERDSMAN_LABEL;
+        const runId = paneEnvironment.OMP_HERDSMAN_RUN_ID;
+        const ownerSessionId = paneEnvironment.OMP_HERDSMAN_OWNER_SESSION_ID;
+        const workspaceId = paneEnvironment.OMP_HERDSMAN_WORKSPACE_ID;
         const paneId = args[args.indexOf("--pane") + 1];
         const tabForPane = tabByPane.get(paneId) ?? "delegated-tab";
         const state: ManagedAgentState = {
@@ -1908,11 +1908,11 @@ export async function assertRestrictiveManagedDefinition(
         environmentCommands.push(args.at(-1) ?? "");
       if (command === "herdr" && args[0] === "pane" && args[1] === "split") {
         const allowed = args.find((arg) =>
-          arg.startsWith("PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS="),
+          arg.startsWith("OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS="),
         );
         if (allowed)
           environmentCommands.push(
-            `PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS='${allowed.slice("PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=".length)}'`,
+            `OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS='${allowed.slice("OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS=".length)}'`,
           );
       }
       return startup.exec(command, args, options);
@@ -1935,10 +1935,10 @@ export async function assertRestrictiveManagedDefinition(
     );
     assert.equal(result.details.ok, true, JSON.stringify(result.details));
     const environment = environmentCommands.find((command) =>
-      command.includes("PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS="),
+      command.includes("OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS="),
     );
     assert.ok(environment);
-    const encoded = /PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS='([^']*)'/.exec(
+    const encoded = /OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS='([^']*)'/.exec(
       environment,
     )?.[1];
     assert.equal(encoded, "[]");
@@ -1952,7 +1952,7 @@ export async function assertRestrictiveManagedDefinition(
   }
 
   const mailbox = setAgentEnvironment(name, allowedAgentDefinitions);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = name;
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = name;
   const agent = fakePi();
   registerExtension!(agent.pi as never);
   try {
@@ -2521,8 +2521,8 @@ export function startupExecutor(
             const key = assignment.slice(0, separator);
             const value = assignment.slice(separator + 1);
             paneEnvironment[key] = value;
-            if (key === "PI_HERDSMAN_RUN_ID") runId = value;
-            if (key === "PI_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
+            if (key === "OMP_HERDSMAN_RUN_ID") runId = value;
+            if (key === "OMP_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
           }
           return {
             stdout: JSON.stringify({
@@ -2609,8 +2609,8 @@ export function startupExecutor(
           if (separator <= 0) continue;
           const key = assignment.slice(0, separator);
           const value = assignment.slice(separator + 1);
-          if (key === "PI_HERDSMAN_RUN_ID") runId = value;
-          if (key === "PI_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
+          if (key === "OMP_HERDSMAN_RUN_ID") runId = value;
+          if (key === "OMP_HERDSMAN_OWNER_SESSION_ID") ownerSessionId = value;
         }
         return {
           stdout: JSON.stringify({
@@ -2666,9 +2666,9 @@ export function startupExecutor(
             paneEnvironment[assignment.slice(0, separator)] = assignment.slice(
               separator + 1,
             );
-          if (assignment.startsWith("PI_HERDSMAN_RUN_ID="))
+          if (assignment.startsWith("OMP_HERDSMAN_RUN_ID="))
             runId = assignment.slice(19);
-          if (assignment.startsWith("PI_HERDSMAN_OWNER_SESSION_ID="))
+          if (assignment.startsWith("OMP_HERDSMAN_OWNER_SESSION_ID="))
             ownerSessionId = assignment.slice(29);
         }
         return {
@@ -2807,8 +2807,8 @@ export function startupExecutor(
 }
 
 export function skillBlock(skill: string, name: string): string {
-  const start = `<!-- pi-herdsman-runtime-${name}:start -->`;
-  const end = `<!-- pi-herdsman-runtime-${name}:end -->`;
+  const start = `<!-- omp-herdsman-runtime-${name}:start -->`;
+  const end = `<!-- omp-herdsman-runtime-${name}:end -->`;
   const from = skill.indexOf(start);
   const to = skill.indexOf(end);
   assert.notEqual(from, -1, `missing ${start}`);

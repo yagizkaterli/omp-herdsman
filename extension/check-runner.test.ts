@@ -27,7 +27,7 @@ async function waitForPids(path: string, timeoutMs: number) {
 }
 
 test("check timeout kills and reaps the fixture process tree", async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), "pi-herdsman-check-runner-"));
+  const directory = await mkdtemp(join(tmpdir(), "omp-herdsman-check-runner-"));
   const pidPath = join(directory, "pids.json");
   t.after(() => rm(directory, { recursive: true, force: true }));
 

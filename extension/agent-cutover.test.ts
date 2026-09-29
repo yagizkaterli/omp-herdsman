@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { makeStrictJsonSchema } from "@earendil-works/pi-ai/api/constrained-sampling";
+import { makeStrictJsonSchema } from "@oh-my-pi/pi-ai/api/constrained-sampling";
 import { Value } from "typebox/value";
 import { parseControlMarker } from "./mailbox.ts";
 import {
@@ -39,14 +39,14 @@ test("multiplexed coordination tool aliases are absent", async () => {
   assert.equal(pi.commands.includes("workers"), false);
   assert.equal(
     pi.entryRenderers.some(
-      ({ customType }) => customType === "pi-herdsman-worker-definition",
+      ({ customType }) => customType === "omp-herdsman-worker-definition",
     ),
     false,
   );
   for (const customType of [
-    "pi-herdsman-worker-result",
-    "pi-herdsman-worker-ask",
-    "pi-herdsman-worker-stale",
+    "omp-herdsman-worker-result",
+    "omp-herdsman-worker-ask",
+    "omp-herdsman-worker-stale",
   ])
     assert.equal(
       pi.messageRenderers.some(
@@ -70,7 +70,7 @@ test("multiplexed coordination tool aliases are absent", async () => {
 
 test("the legacy allowlist environment variable grants no agent capability", () => {
   const mailbox = setAgentEnvironment("legacy-allowlist-agent");
-  process.env.PI_HERDSMAN_ALLOWED_WORKERS = JSON.stringify(["child"]);
+  process.env.OMP_HERDSMAN_ALLOWED_WORKERS = JSON.stringify(["child"]);
   const pi = fakePi();
   registerExtension!(pi.pi as never);
   try {
@@ -84,7 +84,7 @@ test("the legacy allowlist environment variable grants no agent capability", () 
     );
   } finally {
     pi.events.get("session_shutdown")?.[0]();
-    delete process.env.PI_HERDSMAN_ALLOWED_WORKERS;
+    delete process.env.OMP_HERDSMAN_ALLOWED_WORKERS;
     resetAgentMailbox(mailbox);
   }
 });
@@ -121,7 +121,7 @@ test("managed Agent surfaces distinguish delegation capability from leaf access"
 test("legacy V3 marker and definition metadata are not accepted", () => {
   const id = "44444444-4444-4444-8444-444444444444";
   assert.equal(
-    parseControlMarker(`__PI_HERDSMAN_WORKER_V3__:${id}`),
+    parseControlMarker(`__OMP_HERDSMAN_WORKER_V3__:${id}`),
     undefined,
   );
   assert.equal(parseControlMarker(controlMarker(id)), id);
@@ -130,7 +130,7 @@ test("legacy V3 marker and definition metadata are not accepted", () => {
       [
         {
           type: "custom",
-          customType: "pi-herdsman-worker-definition",
+          customType: "omp-herdsman-worker-definition",
           data: { name: "legacy" },
         },
       ],

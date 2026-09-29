@@ -606,7 +606,7 @@ test("registered agent writes state, handles input, and settles one result", asy
   assert.equal(idleAfterStartup?.completedRequestId, undefined);
   assert.equal(
     agent.calls.some((args) =>
-      args.some((arg) => arg.startsWith("pi-herdsman:")),
+      args.some((arg) => arg.startsWith("omp-herdsman:")),
     ),
     true,
   );
@@ -925,13 +925,13 @@ test("agent bounds result persistence failure and exposes owner recovery evidenc
     ),
   });
   for (const key of [
-    "PI_HERDSMAN_MAILBOX",
-    "PI_HERDSMAN_RUN_ID",
-    "PI_HERDSMAN_OWNER_SESSION_ID",
-    "PI_HERDSMAN_LABEL",
-    "PI_HERDSMAN_WORKSPACE_ID",
-    "PI_HERDSMAN_AGENT_DEFINITION",
-    "PI_HERDSMAN_ALLOWED_AGENT_DEFINITIONS",
+    "OMP_HERDSMAN_MAILBOX",
+    "OMP_HERDSMAN_RUN_ID",
+    "OMP_HERDSMAN_OWNER_SESSION_ID",
+    "OMP_HERDSMAN_LABEL",
+    "OMP_HERDSMAN_WORKSPACE_ID",
+    "OMP_HERDSMAN_AGENT_DEFINITION",
+    "OMP_HERDSMAN_ALLOWED_AGENT_DEFINITIONS",
     "HERDR_PANE_ID",
   ])
     delete process.env[key];
@@ -1377,7 +1377,7 @@ test("ask_owner eligibility permits no children or only ask-blocked children", a
 
 test("idle parent steers through its current input turn while agent work is pending", async () => {
   const parentMailbox = setAgentEnvironment("idle-steer-parent");
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("idle-steer-parent", REQUEST_ID);
   const child = {
     ...managedState(
@@ -1398,11 +1398,11 @@ test("idle parent steers through its current input turn while agent work is pend
   const context = fakeAgentContext([
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ]);
@@ -1489,7 +1489,7 @@ test("idle parent steers through its current input turn while agent work is pend
 
 test("parent settlement waits for agent delivery and ignores result cleanup lag", async () => {
   setAgentEnvironment("delegating-parent", ["child"]);
-  process.env.PI_HERDSMAN_AGENT_DEFINITION = "parent";
+  process.env.OMP_HERDSMAN_AGENT_DEFINITION = "parent";
   const parent = managedState("delegating-parent");
   const childOne = {
     ...managedState("child-one", REQUEST_ID, recoveryIdentity("child-one")),
@@ -1554,11 +1554,11 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "parent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "parent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "parent",
       },
     },
   ];
@@ -1662,7 +1662,7 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
     assert.equal(pi.sent.length, 1);
     assert.equal(
       (pi.sentMessageCalls[0].message as any).customType,
-      "pi-herdsman-agent-result",
+      "omp-herdsman-agent-result",
     );
     assert.deepEqual(pi.sentMessageCalls[0].options, {
       triggerTurn: true,
@@ -1701,7 +1701,7 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
       "one",
     );
     entries.push({
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: resultEntryDetails(childOne, childOne.activeRequestId!),
     });
     await settle(undefined, context);
@@ -1715,7 +1715,7 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
       })),
       [
         {
-          customType: "pi-herdsman-agent-result",
+          customType: "omp-herdsman-agent-result",
           options: { triggerTurn: true, deliverAs: "steer" },
         },
       ],
@@ -1744,8 +1744,8 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
     assert.equal(
       entries.some(
         (entry: any) =>
-          (entry.customType === "pi-herdsman-agent-result" ||
-            entry.message?.customType === "pi-herdsman-agent-result") &&
+          (entry.customType === "omp-herdsman-agent-result" ||
+            entry.message?.customType === "omp-herdsman-agent-result") &&
           (entry.details?.requestId ?? entry.message?.details?.requestId) ===
             childTwo.activeRequestId,
       ),
@@ -1755,7 +1755,7 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
     assert.equal(pi.sent.length, 3);
     entries.push({
       message: {
-        customType: "pi-herdsman-agent-result",
+        customType: "omp-herdsman-agent-result",
         details: resultEntryDetails(childTwo, childTwo.activeRequestId!),
       },
     });
@@ -1791,7 +1791,7 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
     });
     assert.equal(readResult(parentMailbox, parentRequestId), undefined);
     entries.push({
-      customType: "pi-herdsman-agent-result",
+      customType: "omp-herdsman-agent-result",
       details: resultEntryDetails(childThree, thirdRequestId),
     });
     await settle(undefined, context);
@@ -1837,10 +1837,10 @@ test("parent settlement waits for agent delivery and ignores result cleanup lag"
     assert.deepEqual(
       pi.sentMessageCalls.map(({ message }) => (message as any).customType),
       [
-        "pi-herdsman-agent-result",
-        "pi-herdsman-agent-result",
-        "pi-herdsman-agent-result",
-        "pi-herdsman-agent-result",
+        "omp-herdsman-agent-result",
+        "omp-herdsman-agent-result",
+        "omp-herdsman-agent-result",
+        "omp-herdsman-agent-result",
       ],
     );
   } finally {
@@ -2936,7 +2936,7 @@ test("session agent identity reads the session-wide entry array", () => {
       [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "current-session",
             definition: "reviewer",
@@ -2946,7 +2946,7 @@ test("session agent identity reads the session-wide entry array", () => {
         { type: "message" },
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "current-session",
             definition: "reviewer",
@@ -2968,7 +2968,7 @@ test("session agent identity reads the session-wide entry array", () => {
       [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: { name: "reviewer" },
         },
       ],
@@ -2982,7 +2982,7 @@ test("session agent identity reads the session-wide entry array", () => {
         [
           {
             type: "custom",
-            customType: "pi-herdsman-agent-definition",
+            customType: "omp-herdsman-agent-definition",
             data: {
               sessionId: "current-session",
               definition: 42,
@@ -2992,7 +2992,7 @@ test("session agent identity reads the session-wide entry array", () => {
         ],
         "current-session",
       ),
-    /invalid pi-herdsman-agent-definition entry/,
+    /invalid omp-herdsman-agent-definition entry/,
   );
   assert.throws(
     () =>
@@ -3000,7 +3000,7 @@ test("session agent identity reads the session-wide entry array", () => {
         [
           {
             type: "custom",
-            customType: "pi-herdsman-agent-definition",
+            customType: "omp-herdsman-agent-definition",
             data: {
               sessionId: "current-session",
               definition: "reviewer",
@@ -3009,7 +3009,7 @@ test("session agent identity reads the session-wide entry array", () => {
           },
           {
             type: "custom",
-            customType: "pi-herdsman-agent-definition",
+            customType: "omp-herdsman-agent-definition",
             data: {
               sessionId: "current-session",
               definition: "implementer",
@@ -3019,14 +3019,14 @@ test("session agent identity reads the session-wide entry array", () => {
         ],
         "current-session",
       ),
-    /conflicting pi-herdsman-agent-definition entries/,
+    /conflicting omp-herdsman-agent-definition entries/,
   );
   assert.deepEqual(
     sessionAgentIdentity(
       [
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "current-session",
             definition: "reviewer",
@@ -3035,7 +3035,7 @@ test("session agent identity reads the session-wide entry array", () => {
         },
         {
           type: "custom",
-          customType: "pi-herdsman-agent-definition",
+          customType: "omp-herdsman-agent-definition",
           data: {
             sessionId: "other-session",
             definition: "reviewer",
@@ -3101,7 +3101,7 @@ test("retired active sessions suppress threshold compaction until completion", a
       .filter(
         (entry: any) =>
           entry?.type === "custom" &&
-          entry.customType === "pi-herdsman-agent-context-retired",
+          entry.customType === "omp-herdsman-agent-context-retired",
       ).length,
     1,
   );
@@ -3151,7 +3151,7 @@ test("context retirement bypasses compaction behavior when disabled", async () =
     };
     writeRequest(mailbox, request);
     agent.events.get("input")![0]({ text: controlMarker(REQUEST_ID) }, context);
-    agent.pi.appendEntry("pi-herdsman-agent-context-retired", {
+    agent.pi.appendEntry("omp-herdsman-agent-context-retired", {
       sessionId: context.sessionManager.getSessionId(),
     });
     assert.equal(
@@ -3227,7 +3227,7 @@ test("overflow retires without cancellation and inactive sessions stay untouched
       undefined,
       inactiveContext,
     );
-    inactiveAgent.pi.appendEntry("pi-herdsman-agent-context-retired", {
+    inactiveAgent.pi.appendEntry("omp-herdsman-agent-context-retired", {
       sessionId: inactiveContext.sessionManager.getSessionId(),
     });
     assert.equal(
@@ -3261,7 +3261,7 @@ test("agent persists one identity entry before mailbox initialization", async ()
   assert.deepEqual(agent.entries, [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "agent",
@@ -3278,7 +3278,7 @@ test("agent rejects a conflicting persisted session identity", async () => {
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "agent",
@@ -3305,7 +3305,7 @@ test("a forked session establishes identity for its own Pi session", async () =>
   const mailbox = setAgentEnvironment("forked-agent");
   const copiedIdentity = {
     type: "custom",
-    customType: "pi-herdsman-agent-definition",
+    customType: "omp-herdsman-agent-definition",
     data: {
       sessionId: "source-session",
       definition: "agent",
@@ -3314,7 +3314,7 @@ test("a forked session establishes identity for its own Pi session", async () =>
   };
   const copiedLegacyIdentity = {
     type: "custom",
-    customType: "pi-herdsman-agent-definition",
+    customType: "omp-herdsman-agent-definition",
     data: { name: "old-agent" },
   };
   const agent = fakePi({ entries: [copiedIdentity, copiedLegacyIdentity] });
@@ -3327,7 +3327,7 @@ test("a forked session establishes identity for its own Pi session", async () =>
       copiedLegacyIdentity,
       {
         type: "custom",
-        customType: "pi-herdsman-agent-definition",
+        customType: "omp-herdsman-agent-definition",
         data: {
           sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           definition: "agent",
@@ -3392,7 +3392,7 @@ test("owner ask delivery is branch-local and recovers on tree navigation", async
     paneId: identity.paneId,
     piSessionId: identity.piSessionId,
   });
-  branch.push({ customType: "pi-herdsman-agent-ask", details: ask });
+  branch.push({ customType: "omp-herdsman-agent-ask", details: ask });
   pi.events.get("session_tree")![0](undefined, context);
   assert.equal(pi.sent.length, 1);
   branch.length = 0;
@@ -3504,7 +3504,7 @@ test("owner ask waits while busy and delivers once after settlement", async () =
     for (const handler of pi.events.get("agent_settled") ?? [])
       await handler(undefined, context);
     const delivered = pi.sent.find(
-      (message: any) => message.customType === "pi-herdsman-agent-ask",
+      (message: any) => message.customType === "omp-herdsman-agent-ask",
     ) as any;
     assert.ok(delivered);
     assert.match(
@@ -3514,7 +3514,7 @@ test("owner ask waits while busy and delivers once after settlement", async () =
     assert.doesNotMatch(delivered.content, /agent action/i);
     assert.equal(
       pi.sent.filter(
-        (message: any) => message.customType === "pi-herdsman-agent-ask",
+        (message: any) => message.customType === "omp-herdsman-agent-ask",
       ).length,
       1,
     );

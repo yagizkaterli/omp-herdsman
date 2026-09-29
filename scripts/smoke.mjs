@@ -22,7 +22,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 const execFileAsync = promisify(execFile);
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const scenarioNames = ["core", "continuation", "chief-tree"];
-const SMOKE_MODEL_KEY = "pi-herdsman.smoke-model";
+const SMOKE_MODEL_KEY = "omp-herdsman.smoke-model";
 const MAX_SOCKET_PATH_BYTES = 100;
 const MAX_SESSION_BYTES = 8 * 1024 * 1024;
 const MAX_CHIEF_TREE_RESULT_BYTES = 16 * 1024;
@@ -540,7 +540,7 @@ async function prepareHerdr(paths) {
 
 async function startNestedHerdr(paths, owned) {
   const id = randomUUID().slice(0, 12);
-  const sessionName = `pi-herdsman-smoke-${id}`;
+  const sessionName = `omp-herdsman-smoke-${id}`;
   owned.sessionName = sessionName;
   assertNestedSocketPathFits(paths, sessionName);
   const host = await herdr(
@@ -719,11 +719,11 @@ async function startCandidate(ctx) {
 }
 
 function corePrompt(expected) {
-  return `Delegate this task to one implementer.\n\nDo not read package.json yourself. The implementer must delegate exactly one scout to read package.json and determine its exact "name" and "version". The implementer must return that result to you.\n\nWhen the delegated work is complete, output exactly:\n\nPI_HERDSMAN_SMOKE_OK ${expected}\n\nDo not output that marker before the implementer reports its result.`;
+  return `Delegate this task to one implementer.\n\nDo not read package.json yourself. The implementer must delegate exactly one scout to read package.json and determine its exact "name" and "version". The implementer must return that result to you.\n\nWhen the delegated work is complete, output exactly:\n\nOMP_HERDSMAN_SMOKE_OK ${expected}\n\nDo not output that marker before the implementer reports its result.`;
 }
 
 function continuationPrompt() {
-  return `Delegate exactly one bounded task to an implementer: read package.json, remember its exact package name, and return only CONTINUATION_FIRST_DONE. After that result reaches you, output exactly PI_HERDSMAN_CONTINUATION_FIRST. Do not read package.json yourself.`;
+  return `Delegate exactly one bounded task to an implementer: read package.json, remember its exact package name, and return only CONTINUATION_FIRST_DONE. After that result reaches you, output exactly OMP_HERDSMAN_CONTINUATION_FIRST. Do not read package.json yourself.`;
 }
 
 export function initialPromptForScenario(scenario, ctx) {
@@ -733,7 +733,7 @@ export function initialPromptForScenario(scenario, ctx) {
     case "continuation":
       return continuationPrompt();
     case "chief-tree":
-      return "Reply exactly with PI_HERDSMAN_CHIEF_TREE_STARTUP.";
+      return "Reply exactly with OMP_HERDSMAN_CHIEF_TREE_STARTUP.";
     default:
       throw new Error(`unknown smoke scenario: ${scenario}`);
   }
@@ -889,7 +889,7 @@ async function rootSessionSnapshot(ctx) {
 
 async function runCoreSmoke(ctx) {
   const deadline = Date.now() + 6 * 60_000;
-  const marker = `PI_HERDSMAN_SMOKE_OK ${ctx.expectedPackage}`;
+  const marker = `OMP_HERDSMAN_SMOKE_OK ${ctx.expectedPackage}`;
   const observed = new Map();
   let sawRootSession = false;
   while (Date.now() < deadline) {
@@ -939,8 +939,8 @@ async function runCoreSmoke(ctx) {
 async function runContinuationSmoke(ctx) {
   const deadline = Date.now() + 6 * 60_000;
   const firstPrompt = ctx.initialPrompt;
-  const firstMarker = "PI_HERDSMAN_CONTINUATION_FIRST";
-  const secondMarker = "PI_HERDSMAN_CONTINUATION_SECOND";
+  const firstMarker = "OMP_HERDSMAN_CONTINUATION_FIRST";
+  const secondMarker = "OMP_HERDSMAN_CONTINUATION_SECOND";
   const expectedName = JSON.parse(
     await readFile(join(ctx.repoRoot, "package.json"), "utf8"),
   ).name;
@@ -1211,7 +1211,7 @@ async function runChiefTreeSmoke(ctx) {
         entry.message.stopReason === "stop" &&
         messageText(entry.message.content)
           .split(/\r?\n/)
-          .some((line) => line.trim() === "PI_HERDSMAN_CHIEF_TREE_STARTUP"),
+          .some((line) => line.trim() === "OMP_HERDSMAN_CHIEF_TREE_STARTUP"),
     );
     return prompt && response ? { prompt, response } : null;
   };
@@ -1268,7 +1268,7 @@ async function runChiefTreeSmoke(ctx) {
 
   await submitPaneCommand(ctx, ctx.rootPaneId, "/smoke-tools chief");
   await awaitSnapshot("chief");
-  const chiefPrompt = "Reply exactly with PI_HERDSMAN_CHIEF_TREE_POST_CHIEF.";
+  const chiefPrompt = "Reply exactly with OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF.";
   await submitPaneCommand(ctx, ctx.rootPaneId, chiefPrompt);
   let branchPlan;
   while (Date.now() < deadline) {
@@ -1277,9 +1277,9 @@ async function runChiefTreeSmoke(ctx) {
       branchPlan = chiefTreeBranchPlan(
         session.contents,
         ctx.initialPrompt,
-        "PI_HERDSMAN_CHIEF_TREE_STARTUP",
+        "OMP_HERDSMAN_CHIEF_TREE_STARTUP",
         chiefPrompt,
-        "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF",
+        "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF",
       );
       if (!branchPlan.error) break;
     }
@@ -1300,14 +1300,14 @@ async function runChiefTreeSmoke(ctx) {
     footer = chiefTreeFooter(treeText);
     if (
       footer &&
-      chiefTreeSelectedRow(treeText, "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF")
+      chiefTreeSelectedRow(treeText, "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF")
     )
       break;
     await sleep(150);
   }
   if (
     !footer ||
-    !chiefTreeSelectedRow(treeText, "PI_HERDSMAN_CHIEF_TREE_POST_CHIEF")
+    !chiefTreeSelectedRow(treeText, "OMP_HERDSMAN_CHIEF_TREE_POST_CHIEF")
   )
     throw new Error(
       "chief-tree-selection: /tree did not show the post-Chief response selected with a valid footer",
@@ -1321,7 +1321,7 @@ async function runChiefTreeSmoke(ctx) {
       throw new Error(
         "chief-tree-selection: tree footer disappeared or changed while locating the startup branch",
       );
-    if (chiefTreeSelectedRow(treeText, "PI_HERDSMAN_CHIEF_TREE_STARTUP")) {
+    if (chiefTreeSelectedRow(treeText, "OMP_HERDSMAN_CHIEF_TREE_STARTUP")) {
       startupSelected = true;
       break;
     }
@@ -1370,7 +1370,7 @@ async function runChiefTreeSmoke(ctx) {
     "selecting the pre-Chief branch must restore ordinary Lead tools",
   );
 
-  const followup = "Reply exactly PI_HERDSMAN_CHIEF_TREE_FOLLOWUP.";
+  const followup = "Reply exactly OMP_HERDSMAN_CHIEF_TREE_FOLLOWUP.";
   await submitPaneCommand(ctx, ctx.rootPaneId, followup);
   while (Date.now() < deadline) {
     const session = await rootSessionSnapshot(ctx);
@@ -1379,7 +1379,7 @@ async function runChiefTreeSmoke(ctx) {
       assistantResultForSession(
         session,
         followup,
-        "PI_HERDSMAN_CHIEF_TREE_FOLLOWUP",
+        "OMP_HERDSMAN_CHIEF_TREE_FOLLOWUP",
       )
     )
       return;

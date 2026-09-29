@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { homedir, tmpdir } from "node:os";
 import { test } from "node:test";
 import packageMetadata from "../package.json" with { type: "json" };
-import { makeStrictJsonSchema } from "@earendil-works/pi-ai/api/constrained-sampling";
+import { makeStrictJsonSchema } from "@oh-my-pi/pi-ai/api/constrained-sampling";
 import { Value } from "typebox/value";
 import { acquireProcessLock } from "./lock.ts";
 import { resultPath, resultRef } from "./storage.ts";
@@ -328,7 +328,7 @@ test("Chief activation exposes only semantic staff tools", async () => {
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -537,12 +537,12 @@ test("registered lead and unmanaged roles expose the correct surface", async () 
   assert.deepEqual(
     lead.messageRenderers.map(({ customType }) => customType).sort(),
     [
-      "pi-herdsman-agent-ask",
-      "pi-herdsman-agent-attention",
-      "pi-herdsman-agent-lost",
-      "pi-herdsman-agent-result",
-      "pi-herdsman-agent-stale",
-      "pi-herdsman-stop-summary",
+      "omp-herdsman-agent-ask",
+      "omp-herdsman-agent-attention",
+      "omp-herdsman-agent-lost",
+      "omp-herdsman-agent-result",
+      "omp-herdsman-agent-stale",
+      "omp-herdsman-stop-summary",
     ],
   );
   assert.equal(lead.commands.includes("subagents"), false);
@@ -573,7 +573,7 @@ test("registered lead and unmanaged roles expose the correct surface", async () 
   assert.equal(notices.length, 1);
   assert.ok(
     notices[0]!.startsWith(
-      `Pi Herdsman v${packageMetadata.version} is inactive`,
+      `OMP Herdsman v${packageMetadata.version} is inactive`,
     ),
   );
   assert.match(notices[0]!, /inactive because .*not running inside Herdr/);
@@ -609,7 +609,7 @@ test("managed agents receive no peer tool and Chiefs expose only staff actively"
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -662,7 +662,7 @@ test("peer list and message use global peer presence, not caller inventory", asy
   realFs.mkdirSync(dirname(resultFile), { recursive: true });
   writeFileSync(resultFile, "peer result evidence", "utf8");
   const resultEntry = {
-    customType: "pi-herdsman-agent-result",
+    customType: "omp-herdsman-agent-result",
     details: {
       agentLabel: "implementation",
       resultIndex: 1,
@@ -686,9 +686,9 @@ test("peer list and message use global peer presence, not caller inventory", asy
         ? {
             name: "Target Lead",
             cwd: "/workspaces/target",
-            repo: "pi-herdsman",
+            repo: "omp-herdsman",
             branch: "feature/peer",
-            workspaceLabel: "pi-herdsman/feature/peer",
+            workspaceLabel: "omp-herdsman/feature/peer",
           }
         : {}),
       claim: lease.claim,
@@ -751,9 +751,9 @@ test("peer list and message use global peer presence, not caller inventory", asy
             session: targetId,
             name: "Target Lead",
             cwd: "/workspaces/target",
-            repo: "pi-herdsman",
+            repo: "omp-herdsman",
             branch: "feature/peer",
-            workspace_label: "pi-herdsman/feature/peer",
+            workspace_label: "omp-herdsman/feature/peer",
           },
           {
             session: unenrichedTargetId,
@@ -900,7 +900,7 @@ test("peer provenance enrichment never replaces the Lead cwd", async (t) => {
                 label: "linked-workspace",
                 worktree: {
                   checkout_path: "/source/checkout",
-                  repo_name: "pi-herdsman",
+                  repo_name: "omp-herdsman",
                 },
               },
             },
@@ -949,15 +949,15 @@ test("peer provenance enrichment never replaces the Lead cwd", async (t) => {
     await t.waitFor(() => {
       const record = readPeerLeadRecord(runtime, sessionId);
       assert.equal(record?.cwd, context.cwd);
-      assert.equal(record.repo, "pi-herdsman");
+      assert.equal(record.repo, "omp-herdsman");
       assert.equal(record.branch, "feature/linked");
-      assert.equal(record.workspaceLabel, "pi-herdsman/feature/linked");
+      assert.equal(record.workspaceLabel, "omp-herdsman/feature/linked");
     });
     const enriched = readPeerLeadRecord(runtime, sessionId);
     assert.equal(enriched?.cwd, context.cwd);
-    assert.equal(enriched?.repo, "pi-herdsman");
+    assert.equal(enriched?.repo, "omp-herdsman");
     assert.equal(enriched?.branch, "feature/linked");
-    assert.equal(enriched?.workspaceLabel, "pi-herdsman/feature/linked");
+    assert.equal(enriched?.workspaceLabel, "omp-herdsman/feature/linked");
   } finally {
     releaseWorktree.resolve();
     await sessionShutdown();
@@ -978,8 +978,8 @@ test("peer publication rejects sender and target generation replacement during a
   );
   const attachment = join(tmpdir(), `peer-attachment-${randomUUID()}.md`);
   writeFileSync(attachment, "attachment evidence\n", "utf8");
-  const configPath = join(PI_AGENT_ROOT, "pi-herdsman", "config.json");
-  realFs.mkdirSync(join(PI_AGENT_ROOT, "pi-herdsman"), { recursive: true });
+  const configPath = join(PI_AGENT_ROOT, "omp-herdsman", "config.json");
+  realFs.mkdirSync(join(PI_AGENT_ROOT, "omp-herdsman"), { recursive: true });
   writeFileSync(configPath, "{}", "utf8");
   const senderId = `lead-a-${randomUUID()}`;
   const targetId = `lead-b-${randomUUID()}`;
@@ -1084,8 +1084,8 @@ test("peer publication tolerates sender and target presentation enrichment durin
   );
   const attachment = join(tmpdir(), `peer-attachment-${randomUUID()}.md`);
   writeFileSync(attachment, "attachment evidence\n", "utf8");
-  const configPath = join(PI_AGENT_ROOT, "pi-herdsman", "config.json");
-  realFs.mkdirSync(join(PI_AGENT_ROOT, "pi-herdsman"), { recursive: true });
+  const configPath = join(PI_AGENT_ROOT, "omp-herdsman", "config.json");
+  realFs.mkdirSync(join(PI_AGENT_ROOT, "omp-herdsman"), { recursive: true });
   writeFileSync(configPath, "{}", "utf8");
   const senderId = `lead-a-${randomUUID()}`;
   const targetId = `lead-b-${randomUUID()}`;
@@ -1102,9 +1102,9 @@ test("peer publication tolerates sender and target presentation enrichment durin
       workspaceId: WORKSPACE,
       name: `${sessionId} Lead`,
       cwd: "/workspaces/peer",
-      repo: "pi-herdsman",
+      repo: "omp-herdsman",
       branch: "feature/peer",
-      workspaceLabel: "pi-herdsman/feature/peer",
+      workspaceLabel: "omp-herdsman/feature/peer",
       claim: lease.claim,
       updatedAt: Date.now(),
     };
@@ -1151,9 +1151,9 @@ test("peer publication tolerates sender and target presentation enrichment durin
         const updated = {
           ...current.record,
           name: `${current.record.name} enriched`,
-          repo: "pi-herdsman-enriched",
+          repo: "omp-herdsman-enriched",
           branch: "feature/enriched",
-          workspaceLabel: "pi-herdsman/feature/enriched",
+          workspaceLabel: "omp-herdsman/feature/enriched",
           updatedAt: current.record.updatedAt + 1,
         };
         writePeerLeadRecord(runtime, updated);
@@ -1321,7 +1321,7 @@ test("active chief describes authoritative remote ask projection", async () => {
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -1443,7 +1443,7 @@ test("active chief describes authoritative remote ask projection", async () => {
   const chiefPrompt = beforeStart?.systemPrompt;
   assert.equal(
     beforeStart?.message?.customType,
-    "pi-herdsman-supervision-context",
+    "omp-herdsman-supervision-context",
   );
   assert.equal(beforeStart?.message?.display, false);
   assert.match(String(beforeStart?.message?.content), /status="fresh"/);
@@ -1503,7 +1503,7 @@ test("staff transcript advertises persisted candidates and revalidates the lead"
   const chiefId = randomUUID();
   const leadId = randomUUID();
   const sessionRoot = realFs.realpathSync(
-    realFs.mkdtempSync(join(tmpdir(), "pi-herdsman-staff-transcript-")),
+    realFs.mkdtempSync(join(tmpdir(), "omp-herdsman-staff-transcript-")),
   );
   const leadPath = join(sessionRoot, "lead.jsonl");
   const header = {
@@ -1655,7 +1655,7 @@ test("staff transcript advertises persisted candidates and revalidates the lead"
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -1949,7 +1949,7 @@ test("a replacement chief never falls back to the previous session supervision",
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -2012,7 +2012,7 @@ test("a replacement chief never falls back to the previous session supervision",
   try {
     await sessionStart(undefined, context);
     const first = await beforeStart();
-    assert.equal(first?.message?.customType, "pi-herdsman-supervision-context");
+    assert.equal(first?.message?.customType, "omp-herdsman-supervision-context");
     assert.equal(first?.message?.display, false);
     assert.match(String(first?.message?.content), /status="fresh"/);
 
@@ -2020,7 +2020,7 @@ test("a replacement chief never falls back to the previous session supervision",
     failRefresh = true;
     await sessionStart(undefined, context);
     const message = (await beforeStart())?.message;
-    assert.equal(message?.customType, "pi-herdsman-supervision-context");
+    assert.equal(message?.customType, "omp-herdsman-supervision-context");
     assert.equal(message?.display, false);
     assert.match(String(message?.content), /status="unavailable"/);
     assert.doesNotMatch(String(message?.content), /status="stale"/);
@@ -2045,7 +2045,7 @@ test("an obsolete background supervision refresh cannot publish after chief tran
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -2130,7 +2130,7 @@ test("an obsolete background supervision refresh cannot publish after chief tran
   try {
     await sessionStart(undefined, context);
     const first = await beforeStart();
-    assert.equal(first?.message?.customType, "pi-herdsman-supervision-context");
+    assert.equal(first?.message?.customType, "omp-herdsman-supervision-context");
     assert.equal(first?.message?.display, false);
     assert.match(String(first?.message?.content), /status="fresh"/);
     blockNextRefresh = true;
@@ -2145,7 +2145,7 @@ test("an obsolete background supervision refresh cannot publish after chief tran
     releaseBlocked();
     await background;
     const message = (await beforeStart())?.message;
-    assert.equal(message?.customType, "pi-herdsman-supervision-context");
+    assert.equal(message?.customType, "omp-herdsman-supervision-context");
     assert.equal(message?.display, false);
     assert.match(String(message?.content), /status="unavailable"/);
     assert.doesNotMatch(String(message?.content), /status="stale"/);
@@ -2170,7 +2170,7 @@ test("Chief supervision context is persistent, deduplicated, and compaction-awar
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -2190,7 +2190,7 @@ test("Chief supervision context is persistent, deduplicated, and compaction-awar
   try {
     await pi.events.get("session_start")![0](undefined, context);
     const first = await beforeStart();
-    assert.equal(first?.message?.customType, "pi-herdsman-supervision-context");
+    assert.equal(first?.message?.customType, "omp-herdsman-supervision-context");
     assert.equal(first?.message?.display, false);
     assert.match(String(first?.message?.content), /status="fresh"/);
 
@@ -2200,7 +2200,7 @@ test("Chief supervision context is persistent, deduplicated, and compaction-awar
       id: "snapshot-1",
       parentId: null,
       timestamp: new Date().toISOString(),
-      customType: "pi-herdsman-supervision-context",
+      customType: "omp-herdsman-supervision-context",
       content,
       display: false,
     });
@@ -2218,7 +2218,7 @@ test("Chief supervision context is persistent, deduplicated, and compaction-awar
     const afterOmission = await beforeStart();
     assert.equal(
       afterOmission?.message?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.equal(afterOmission?.message?.display, false);
     assert.match(String(afterOmission?.message?.content), /status="fresh"/);
@@ -2231,7 +2231,7 @@ test("Chief supervision context is persistent, deduplicated, and compaction-awar
         id: "snapshot-old",
         parentId: null,
         timestamp: new Date().toISOString(),
-        customType: "pi-herdsman-supervision-context",
+        customType: "omp-herdsman-supervision-context",
         content,
         display: false,
       },
@@ -2281,7 +2281,7 @@ test("Chief preflight gate defers idle inbox delivery until agent_start", async 
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -2421,7 +2421,7 @@ test("Chief preflight gate defers idle inbox delivery until agent_start", async 
     const prepared = await beforeStart;
     assert.equal(
       prepared?.message?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.equal(pi.sentMessageCalls.length, 0);
 
@@ -2434,7 +2434,7 @@ test("Chief preflight gate defers idle inbox delivery until agent_start", async 
     const overlappingPrepared = await overlappingBeforeStart;
     assert.equal(
       overlappingPrepared?.message?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.equal(pi.sentMessageCalls.length, 0);
 
@@ -2449,7 +2449,7 @@ test("Chief preflight gate defers idle inbox delivery until agent_start", async 
     );
     assert.equal(
       (pi.sentMessageCalls[0]?.message as any)?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.deepEqual(pi.sentMessageCalls[0]?.options, { triggerTurn: false });
     assert.match(
@@ -2477,7 +2477,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
   const chiefId = `chief-${randomUUID()}`;
   const replacementId = `replacement-${randomUUID()}`;
   const sessionRoot = realFs.realpathSync(
-    realFs.mkdtempSync(join(tmpdir(), "pi-herdsman-contract-sessions-")),
+    realFs.mkdtempSync(join(tmpdir(), "omp-herdsman-contract-sessions-")),
   );
   const leadPath = join(sessionRoot, "lead.jsonl");
   const chiefPath = join(sessionRoot, "chief.jsonl");
@@ -2675,7 +2675,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
   const chiefEntries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -2683,7 +2683,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     },
     {
       type: "custom",
-      customType: "pi-herdsman-lead-state",
+      customType: "omp-herdsman-lead-state",
       data: {},
     },
   ];
@@ -2728,7 +2728,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     "staff_reply",
   ]);
   const chiefLeadStateEntriesBeforeDelivery = chiefEntries.filter(
-    (entry) => (entry as any).customType === "pi-herdsman-lead-state",
+    (entry) => (entry as any).customType === "omp-herdsman-lead-state",
   );
   const attachment = join(tmpdir(), `chief-attachment-${randomUUID()}.md`);
   writeFileSync(attachment, "chief evidence\n", "utf8");
@@ -2748,7 +2748,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     const supervisionMessage = chiefStart?.message;
     assert.equal(
       supervisionMessage?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.equal(supervisionMessage?.display, false);
     assert.match(String(supervisionMessage?.content), /status="fresh"/);
@@ -2816,8 +2816,8 @@ test("registered lead and replacement chief exchange messages and asks", async (
     );
     const chiefDescriptorPath = supervisionRuntime().descriptor;
     const chiefDescriptor = readFileSync(chiefDescriptorPath, "utf8");
-    realFs.mkdirSync(join(PI_AGENT_ROOT, "pi-herdsman"), { recursive: true });
-    const configPath = join(PI_AGENT_ROOT, "pi-herdsman", "config.json");
+    realFs.mkdirSync(join(PI_AGENT_ROOT, "omp-herdsman"), { recursive: true });
+    const configPath = join(PI_AGENT_ROOT, "omp-herdsman", "config.json");
     writeFileSync(configPath, "{}", "utf8");
     support.configReadHook = () =>
       writeFileSync(
@@ -2924,7 +2924,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
           calls.some(
             (call) =>
               (call.message as any)?.customType ===
-              "pi-herdsman-supervision-context",
+              "omp-herdsman-supervision-context",
           ),
           "Chief did not receive supervision context",
         );
@@ -2942,7 +2942,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     const deliveryCalls = chief.sentMessageCalls.slice(chiefDeliveryStart);
     assert.equal(
       (deliveryCalls[0]?.message as any)?.customType,
-      "pi-herdsman-supervision-context",
+      "omp-herdsman-supervision-context",
     );
     assert.deepEqual(deliveryCalls[0]?.options, { triggerTurn: false });
     assert.match(
@@ -2958,7 +2958,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     // changed its pending ask.
     assert.deepEqual(
       chiefEntries.filter(
-        (entry) => (entry as any).customType === "pi-herdsman-lead-state",
+        (entry) => (entry as any).customType === "omp-herdsman-lead-state",
       ),
       chiefLeadStateEntriesBeforeDelivery,
     );
@@ -3109,7 +3109,7 @@ test("registered lead and replacement chief exchange messages and asks", async (
     await chief.events.get("session_shutdown")![0]();
     assert.deepEqual(
       chiefEntries.filter(
-        (entry) => (entry as any).customType === "pi-herdsman-lead-state",
+        (entry) => (entry as any).customType === "omp-herdsman-lead-state",
       ),
       chiefLeadStateEntriesBeforeDelivery,
     );
@@ -3363,7 +3363,7 @@ test("lead restart creates a fresh coordination generation but restores state", 
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-lead-state",
+      customType: "omp-herdsman-lead-state",
       data: {
         pendingAsk: {
           askId: "11111111-1111-4111-8111-111111111111",
@@ -3406,7 +3406,7 @@ test("malformed persisted role fails closed without authoritative lead state", a
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: { role: "not-a-role" },
     },
   ];
@@ -3496,7 +3496,7 @@ test("persisted Chief startup skips agent definition discovery", async () => {
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -3618,11 +3618,11 @@ test("delegating agents receive only their allowed definition roster", async () 
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-agent-definition",
+      customType: "omp-herdsman-agent-definition",
       data: {
         sessionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         definition: "agent",
-        label: process.env.PI_HERDSMAN_LABEL ?? "agent",
+        label: process.env.OMP_HERDSMAN_LABEL ?? "agent",
       },
     },
   ];
@@ -3779,7 +3779,7 @@ test("leaf agents and active Chiefs do not receive agent definition rosters", as
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -3800,7 +3800,7 @@ test("leaf agents and active Chiefs do not receive agent definition rosters", as
   );
   assert.match(prompt?.systemPrompt ?? "", /Chief/);
   assert.doesNotMatch(prompt?.systemPrompt ?? "", /<agent_definitions>/);
-  assert.equal(prompt?.message?.customType, "pi-herdsman-supervision-context");
+  assert.equal(prompt?.message?.customType, "omp-herdsman-supervision-context");
   assert.equal(prompt?.message?.display, false);
   assert.match(String(prompt?.message?.content), /status="fresh"/);
   chief.events.get("session_shutdown")?.[0]();
@@ -3820,7 +3820,7 @@ test("first failed chief supervision refresh is explicitly unavailable", async (
   const entries = [
     {
       type: "custom",
-      customType: "pi-herdsman-role",
+      customType: "omp-herdsman-role",
       data: {
         role: "chief",
         leadTools: REGISTERED_ROLE_TOOLS.map(({ name }) => name),
@@ -3841,7 +3841,7 @@ test("first failed chief supervision refresh is explicitly unavailable", async (
     { systemPromptOptions: { contextFiles: [] } },
     context,
   );
-  assert.equal(result?.message?.customType, "pi-herdsman-supervision-context");
+  assert.equal(result?.message?.customType, "omp-herdsman-supervision-context");
   assert.equal(result?.message?.display, false);
   assert.match(String(result?.message?.content), /status="unavailable"/);
   assert.match(
@@ -4023,7 +4023,7 @@ test("list ignores an unrelated unnamed Herdr agent", async () => {
 
 test("invalid agent owner identity registers no managed agent hooks", () => {
   const mailbox = setAgentEnvironment();
-  process.env.PI_HERDSMAN_OWNER_SESSION_ID = "not-a-session-id";
+  process.env.OMP_HERDSMAN_OWNER_SESSION_ID = "not-a-session-id";
   const invalid = fakePi();
   registerExtension!(invalid.pi as never);
   assert.equal(invalid.tools.length, 0);
@@ -4197,7 +4197,7 @@ test("agent input accepts only the v3 Herdr control marker", async () => {
       { action: "continue" },
     );
     assert.deepEqual(
-      input({ text: "__PI_HERDSMAN_AGENT_V4__:malformed" }, context),
+      input({ text: "__OMP_HERDSMAN_AGENT_V4__:malformed" }, context),
       { action: "handled" },
     );
   } finally {
