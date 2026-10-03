@@ -1,13 +1,12 @@
 import {
   DEFAULT_MAX_BYTES,
-  DEFAULT_MAX_LINES,
-  formatSize,
-  getMarkdownTheme,
   truncateHead,
   truncateLine,
-  truncateTail,
-} from "@oh-my-pi/pi-coding-agent";
-import { contentText } from "@oh-my-pi/pi-ai";
+} from "@oh-my-pi/pi-tui/tools/streaming-output";
+import { formatBytes as formatSize } from "@oh-my-pi/pi-tui/render/render-utils";
+import { getMarkdownTheme } from "@oh-my-pi/pi-tui/theme";
+import { contentText } from "./content.ts";
+import { truncateTail } from "@oh-my-pi/pi-tui/tools/streaming-output";
 import * as PiTui from "@oh-my-pi/pi-tui";
 import {
   Container,
@@ -32,6 +31,8 @@ import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import type { SupervisionSnapshot } from "./supervision.ts";
 import { herdsmanTempRoot, resultPath, resultRef } from "./storage.ts";
+
+const MODEL_OUTPUT_MAX_LINES = 2000;
 
 export type AgentLifecycleState =
   "working" | "blocked" | "settling" | "starting" | "unknown" | "lost";
@@ -395,7 +396,7 @@ export function layoutStatusRows(
 ): StatusDisplayRow[] {
   const columns = statusColumns(rows);
   const available =
-    width === undefined ? Number.MAX_SAFE_INTEGER : Math.max(0, width);
+    width === undefined ? 120 : Math.max(0, width);
   const layouts = options.compact ? STATUS_LAYOUTS.slice(1) : STATUS_LAYOUTS;
   const layout =
     layouts.find((candidate) => {
@@ -2483,7 +2484,7 @@ export function truncateModelText(
   const truncate = options.keep === "tail" ? truncateTail : truncateHead;
   let result = truncate(displayText, {
     maxBytes: DEFAULT_MAX_BYTES,
-    maxLines: DEFAULT_MAX_LINES,
+    maxLines: MODEL_OUTPUT_MAX_LINES,
   });
   if (!result.truncated) {
     return {
@@ -2507,13 +2508,13 @@ export function truncateModelText(
   for (let attempt = 0; attempt < 4; attempt++) {
     const suffixBytes = Buffer.byteLength(suffix) + 1;
     if (
-      result.outputLines + 1 <= DEFAULT_MAX_LINES &&
+      result.outputLines + 1 <= MODEL_OUTPUT_MAX_LINES &&
       Buffer.byteLength(result.content) + suffixBytes <= DEFAULT_MAX_BYTES
     )
       break;
     result = truncate(displayText, {
       maxBytes: Math.max(1, DEFAULT_MAX_BYTES - suffixBytes),
-      maxLines: Math.max(1, DEFAULT_MAX_LINES - 1),
+      maxLines: Math.max(1, MODEL_OUTPUT_MAX_LINES - 1),
     });
     suffix = suffixFor(result.content);
   }
@@ -2523,14 +2524,14 @@ export function truncateModelText(
   while (
     (Buffer.byteLength(result.content) + Buffer.byteLength(suffix) + 1 >
       DEFAULT_MAX_BYTES ||
-      result.outputLines + 1 > DEFAULT_MAX_LINES) &&
+      result.outputLines + 1 > MODEL_OUTPUT_MAX_LINES) &&
     result.content.length > 0
   ) {
     const maxBytes = Math.max(
       1,
       DEFAULT_MAX_BYTES - Buffer.byteLength(suffix) - 1,
     );
-    const maxLines = Math.max(1, DEFAULT_MAX_LINES - 1);
+    const maxLines = Math.max(1, MODEL_OUTPUT_MAX_LINES - 1);
     const next = truncate(result.content, { maxBytes, maxLines });
     if (next.content === result.content) break;
     result = next;

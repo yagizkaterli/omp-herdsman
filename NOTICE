@@ -1,0 +1,16 @@
+OMP Herdsman
+============
+
+Copyright 2026 Yagiz Katerli and the HERAKLES project contributors.
+
+This product is a fork/port of pi-herdsman
+(https://github.com/boadij/pi-herdsman), Copyright its contributors,
+licensed under the Apache License, Version 2.0.
+
+  Original project : pi-herdsman (boadij/pi-herdsman)
+  Upstream license : Apache License, Version 2.0
+  This port        : retargets the runtime to omp (@oh-my-pi/pi-coding-agent)
+                     and Herdr agent kind/source/state integration to omp.
+
+Files derived from the upstream project retain their original licensing.
+See LICENSE for the full Apache License, Version 2.0 text.

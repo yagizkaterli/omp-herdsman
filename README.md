@@ -4,25 +4,36 @@ Fork/port of [pi-herdsman](https://github.com/boadij/pi-herdsman) for **omp** (`
 
 Apache-2.0. Upstream: boadij/pi-herdsman.
 
-## Status (Herakles)
+## Status
 
-- Mechanical port: package peers `@oh-my-pi/*`, herdr `--kind omp`, session `herdr:omp`, agent-state `herdr-omp-agent-state.ts`
-- Not drop-in complete until extension API + spawn dogfood pass under omp 18.x
+- OMP 18.x dependencies and runtime APIs; Herdr agent kind, identity, and state integration use `omp` / `herdr:omp`.
+- `npm run build` creates `dist/index.js`.
+- `herdr integration install omp` installs the current OMP pane-state hook.
+- Runtime smoke-tested: extension loads in OMP and `/herdsman` registers.
 
-## Install (dev)
+## Install (development)
 
 ```sh
-cd /root/repos/omp-herdsman
 npm install
 npm run build
-# link into omp extensions — TBD: omp install path
+omp install . --force
+omp plugin enable omp-herdsman
+herdr integration install omp
 ```
+
+In a Herdr OMP pane, run `/herdsman`. OMP's built-in `/agents` remains separate.
+
+## Validation and known differences
+
+- Verified: `npm run build`, OMP startup, and `/herdsman` menu in a Herdr OMP pane.
+- `npm run check` and `npm test` are not green: Node 22 cannot load OMP TypeScript sources from `node_modules`, and migrated tests still contain Pi-specific expectations.
+- OMP has `registerMessageRenderer` but no `registerEntryRenderer`; custom-entry visual parity is not complete.
 
 ## Difference from pi-herdsman
 
 | | pi-herdsman | omp-herdsman |
 |---|---|---|
-| runtime | @earendil-works/pi 0.87 | @oh-my-pi 18.x / omp CLI |
-| herdr kind | pi | omp |
-| session source | herdr:pi | herdr:omp |
-| agent-state | herdr-agent-state.ts | herdr-omp-agent-state.ts |
+| runtime | `@earendil-works/pi` | `@oh-my-pi/*` 18.x / `omp` |
+| herdr kind | `pi` | `omp` |
+| session source | `herdr:pi` | `herdr:omp` |
+| agent-state | `herdr-agent-state.ts` | `herdr-omp-agent-state.ts` |

@@ -20,6 +20,7 @@ await build({
     "@oh-my-pi/pi-ai",
     "@oh-my-pi/pi-coding-agent",
     "@oh-my-pi/pi-tui",
+    "@oh-my-pi/pi-utils",
     "typebox",
   ],
 });

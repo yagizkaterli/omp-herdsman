@@ -12,12 +12,8 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  CONFIG_DIR_NAME,
-  getAgentDir,
-  loadProjectContextFiles,
-  parseFrontmatter as parsePiFrontmatter,
-} from "@oh-my-pi/pi-coding-agent";
+import { getAgentDir } from "@oh-my-pi/pi-coding-agent";
+import { CONFIG_DIR_NAME, parseFrontmatter as parsePiFrontmatter } from "@oh-my-pi/pi-utils";
 import { snapshotTextFiles } from "./core.ts";
 import { herdsmanTempRoot } from "./storage.ts";
 
@@ -67,6 +63,36 @@ const SUPPORTED_FIELDS = new Set([
   ...BOOLEAN_CAPABILITY_FIELDS,
   ...ARRAY_FIELDS,
 ]);
+function loadProjectContextFiles({
+  cwd,
+  agentDir,
+}: {
+  cwd: string;
+  agentDir: string;
+}): Array<{ path: string }> {
+  const contextPaths: string[] = [];
+  for (let directory = resolve(cwd); ; directory = dirname(directory)) {
+    for (const path of [
+      join(directory, "AGENTS.md"),
+      join(directory, CONFIG_DIR_NAME, "AGENTS.md"),
+    ]) {
+      try {
+        if (statSync(path).isFile()) contextPaths.push(path);
+      } catch {
+        // Missing context files are expected during ancestor traversal.
+      }
+    }
+    const parent = dirname(directory);
+    if (parent === directory) break;
+  }
+  const globalContext = join(agentDir, "AGENTS.md");
+  try {
+    if (statSync(globalContext).isFile()) contextPaths.push(globalContext);
+  } catch {
+    // Global context is optional.
+  }
+  return contextPaths.map((path) => ({ path }));
+}
 const BODY_FILE_REFERENCE =
   sep === "\\"
     ? /^[ \t]*@((?:[\\/]|~[\\/]|\.{1,2}[\\/]|[A-Za-z]:[\\/]|\\\\).+?)[ \t]*$/gmu

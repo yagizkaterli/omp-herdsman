@@ -5,25 +5,28 @@ import type {
   ExtensionCommandContext,
   ExtensionContext,
   ModelSelectEvent,
-  ProjectedSessionEntry,
+  
   SessionBeforeCompactEvent,
   SessionEntry,
   ThinkingLevelSelectEvent,
 } from "@oh-my-pi/pi-coding-agent";
+import { contentText } from "./content.ts";
 import {
-  contentText,
   getSupportedThinkingLevels,
   StringEnum,
 } from "@oh-my-pi/pi-ai";
 import {
-  buildSessionProjection,
   CURRENT_SESSION_VERSION,
-  DynamicBorder,
   getAgentDir,
   parseSessionEntries,
   SessionManager,
-  truncateTail,
 } from "@oh-my-pi/pi-coding-agent";
+import { DynamicBorder } from "@oh-my-pi/pi-tui/chrome/dynamic-border";
+import { truncateTail } from "@oh-my-pi/pi-tui/tools/streaming-output";
+import {
+  buildSessionProjection,
+  type ProjectedSessionEntry,
+} from "./session-projection.ts";
 import { createHash, randomUUID } from "node:crypto";
 import {
   realpathSync,
@@ -1565,7 +1568,7 @@ async function herdrVersion(
 function expectedSession(id?: string, path?: string): ExpectedSession {
   return { id, path };
 }
-function isPiAgent(agent: any): boolean {
+function isOmpAgent(agent: any): boolean {
   return sessionIdentity(agent?.agent_session) !== undefined;
 }
 async function workspacePresentationProvenance(
@@ -1709,7 +1712,7 @@ function isLeadSessionBoundary(
   pane: any,
   ownerSessionId: string,
 ): boolean {
-  if (!isPiAgent(agent) || pane?.agent !== "pi") return false;
+  if (!isOmpAgent(agent) || pane?.agent !== "omp") return false;
   const session = sessionIdentity(agent?.agent_session);
   if (session?.kind !== "path") return false;
   try {
@@ -2683,7 +2686,7 @@ async function managedAgentSnapshots(
     const now = Date.now();
     const listed = {
       label: state.agentLabel,
-      kind: "pi",
+      kind: "omp",
       state: projectedState,
       steerable,
       workspace_id: state.workspaceId,
@@ -6439,30 +6442,6 @@ export default function (pi: ExtensionAPI): void {
     });
     return;
   }
-  pi.registerEntryRenderer(AGENT_DEFINITIONS_ENTRY, (entry, options, theme) => {
-    const definitions = entry?.data?.definitions;
-    if (
-      !Array.isArray(definitions) ||
-      !definitions.every(
-        (definition) =>
-          definition !== null &&
-          typeof definition === "object" &&
-          !Array.isArray(definition),
-      )
-    )
-      return undefined;
-    const instructions =
-      typeof entry?.data?.instructions === "string"
-        ? entry.data.instructions
-        : undefined;
-    return renderAgentDefinitionsOverview(definitions, theme, {
-      ...options,
-      instructions,
-    });
-  });
-  pi.registerEntryRenderer(HERD_RUN_ENTRY, (entry, _options, theme) =>
-    renderHerdRunEntry(entry, theme),
-  );
   pi.registerMessageRenderer(
     "omp-herdsman-stop-summary",
     (message, _options, theme) => renderStopSummary(message, theme),
@@ -6493,20 +6472,16 @@ export default function (pi: ExtensionAPI): void {
   );
   const processRole = role();
   if (processRole === "unmanaged") {
-    const agentsCommand = {
+    const herdsmanCommand = {
       description: "Show OMP Herdsman setup guidance",
       handler: async (_args: string, ctx: ExtensionCommandContext) => {
         if (!ctx.hasUI) return;
         ctx.ui.notify(
-          `OMP Herdsman v${HERDSMAN_VERSION} is inactive because this Pi session is not running inside Herdr.\n\nStart Herdr in this project, then run Pi in a Herdr pane:\n  herdr\n  pi\n\nIf needed, install the Pi integration once:\n  herdr integration install pi`,
+          `OMP Herdsman v${HERDSMAN_VERSION} is inactive because this OMP session is not running inside Herdr.\n\nStart Herdr in this project, then run OMP in a Herdr pane:\n  herdr\n  omp\n\nIf needed, install the OMP integration once:\n  herdr integration install omp`,
         );
       },
     };
-    pi.registerCommand("agents", agentsCommand);
-    pi.registerCommand("herdsman", {
-      ...agentsCommand,
-      description: "Alias for /agents",
-    });
+    pi.registerCommand("herdsman", herdsmanCommand);
     return;
   }
   const allowedAgentDefinitions =
@@ -7220,7 +7195,7 @@ export default function (pi: ExtensionAPI): void {
   const liveAgent = async (ctx: ExtensionContext, sessionId: string) =>
     (await listAllHerdrAgents(pi, ctx, ctx.signal)).agents.filter(
       (agent: any) =>
-        isPiAgent(agent) &&
+        isOmpAgent(agent) &&
         herdrSessionId(agent) === sessionId &&
         typeof agent.pane_id === "string" &&
         typeof agent.tab_id === "string" &&
@@ -7233,7 +7208,7 @@ export default function (pi: ExtensionAPI): void {
     const inventory = (await listAllHerdrAgents(pi, ctx, ctx.signal)).agents;
     const matches = inventory.filter(
       (agent: any) =>
-        isPiAgent(agent) && herdrSessionId(agent) === descriptor.piSessionId,
+        isOmpAgent(agent) && herdrSessionId(agent) === descriptor.piSessionId,
     );
     if (
       matches.length !== 1 ||
@@ -7255,7 +7230,7 @@ export default function (pi: ExtensionAPI): void {
         { signal: ctx.signal },
       );
       const alias = result?.agent;
-      if (!isPiAgent(alias) || herdrSessionId(alias) !== descriptor.piSessionId)
+      if (!isOmpAgent(alias) || herdrSessionId(alias) !== descriptor.piSessionId)
         return undefined;
     } catch {
       // A failed alias lookup is not identity proof.
@@ -8158,7 +8133,7 @@ export default function (pi: ExtensionAPI): void {
         for (const agent of agents) {
           const sessionId = herdrSessionId(agent);
           if (
-            !isPiAgent(agent) ||
+            !isOmpAgent(agent) ||
             !sessionId ||
             sessionId === chief.piSessionId ||
             agentIds.has(sessionId) ||
@@ -8167,7 +8142,7 @@ export default function (pi: ExtensionAPI): void {
             typeof agent.workspace_id !== "string" ||
             agents.filter(
               (candidate: any) =>
-                isPiAgent(candidate) && herdrSessionId(candidate) === sessionId,
+                isOmpAgent(candidate) && herdrSessionId(candidate) === sessionId,
             ).length !== 1
           )
             continue;
@@ -8260,7 +8235,7 @@ export default function (pi: ExtensionAPI): void {
       );
       const agents = live.flatMap((agent: any) => {
         const sessionId = herdrSessionId(agent);
-        if (!isPiAgent(agent) || !sessionId) return [];
+        if (!isOmpAgent(agent) || !sessionId) return [];
         const sessionName = persistedSessionName(agent);
         const candidateSessionFile = supervisedSessionFile(agent, sessionId);
         const piSessionFile =
@@ -8300,8 +8275,8 @@ export default function (pi: ExtensionAPI): void {
       );
       const diagnostics = live.some(
         (agent: any) =>
-          (agent?.agent === "pi" || agent?.agent_session?.agent === "pi") &&
-          !isPiAgent(agent),
+          (agent?.agent === "omp" || agent?.agent_session?.agent === "omp") &&
+          !isOmpAgent(agent),
       )
         ? [
             "Live Pi agents are present but their session identities are unresolvable",
@@ -8533,7 +8508,7 @@ export default function (pi: ExtensionAPI): void {
           candidate?.pane_id === lead.paneId &&
           candidate?.tab_id === lead.tabId &&
           candidate?.workspace_id === lead.workspaceId &&
-          isPiAgent(candidate) &&
+          isOmpAgent(candidate) &&
           herdrSessionId(candidate) === lead.lead,
       );
       if (matches.length !== 1) throw new Error("Lead changed; reopen staff.");
@@ -8550,7 +8525,7 @@ export default function (pi: ExtensionAPI): void {
       const candidate = await remoteChiefAgent(ctx, descriptor);
       const current = readChiefDescriptor(supervisionRuntime().descriptor);
       if (
-        !isPiAgent(candidate) ||
+        !isOmpAgent(candidate) ||
         herdrSessionId(candidate) !== descriptor.piSessionId ||
         !sameChiefDescriptor(current, descriptor)
       )
@@ -8767,7 +8742,7 @@ export default function (pi: ExtensionAPI): void {
                   },
                   ctx.signal,
                   (agent: any) =>
-                    isPiAgent(agent) &&
+                    isOmpAgent(agent) &&
                     agent?.pane_id === lead.paneId &&
                     agent?.tab_id === lead.tabId &&
                     herdrSessionId(agent) === lead.lead &&
@@ -10130,7 +10105,7 @@ export default function (pi: ExtensionAPI): void {
               signal,
               (agent) => {
                 return (
-                  isPiAgent(agent) &&
+                  isOmpAgent(agent) &&
                   herdrSessionId(agent) === lead.lead &&
                   agent.pane_id === lead.paneId &&
                   agent.tab_id === lead.tabId &&
@@ -10476,8 +10451,8 @@ export default function (pi: ExtensionAPI): void {
         supervisionToolRegistered = true;
         registerSupervisionTool = undefined;
       };
-      const agentsCommand = {
-        description: "Manage Herdr agents",
+      const herdsmanCommand = {
+        description: "Manage OMP Herdsman agents",
         getArgumentCompletions: (argumentPrefix: string) => {
           const commands = ["definitions", "placement", "stop"];
           const trimmed = argumentPrefix.trimStart();
@@ -10495,8 +10470,9 @@ export default function (pi: ExtensionAPI): void {
         handler: async (rawArgs: string, ctx: ExtensionCommandContext) => {
           if (!ctx.hasUI) return;
           const usage =
-            "Usage: /agents definitions | placement [tab|subtree|split] | stop";
-          const placementUsage = "Usage: /agents placement [tab|subtree|split]";
+            "Usage: /herdsman definitions | placement [tab|subtree|split] | stop";
+          const placementUsage =
+            "Usage: /herdsman placement [tab|subtree|split]";
           const args = rawArgs.trim() ? rawArgs.trim().split(/\s+/u) : [];
           try {
             if (!args.length) return void (await openAgentsMenu(ctx));
@@ -10522,11 +10498,7 @@ export default function (pi: ExtensionAPI): void {
           }
         },
       };
-      pi.registerCommand("agents", agentsCommand);
-      pi.registerCommand("herdsman", {
-        ...agentsCommand,
-        description: "Alias for /agents",
-      });
+      pi.registerCommand("herdsman", herdsmanCommand);
     }
     const recoverControllerRuntimes = async (
       ctx: ExtensionContext,

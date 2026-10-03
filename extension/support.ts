@@ -961,7 +961,7 @@ export function listResponse(
     ...(sessionId
       ? {
           agent_session: {
-            source: "herdr:pi",
+            source: "herdr:omp",
             agent: "pi",
             kind: "id",
             value: sessionId,
@@ -1064,7 +1064,7 @@ export function leadExec(
                   agent_status: useAgentStatus ? agentStatus : status,
                   agent_session: listSession
                     ? {
-                        source: "herdr:pi",
+                        source: "herdr:omp",
                         agent: "pi",
                         kind: "id",
                         value: listSession,
@@ -1110,7 +1110,7 @@ export function leadExec(
               workspace_id: WORKSPACE,
               cwd: "/tmp",
               agent_session: {
-                source: "herdr:pi",
+                source: "herdr:omp",
                 agent: "pi",
                 kind: "id",
                 value: session,
@@ -1149,7 +1149,7 @@ export function agentFromState(
     tab_id: `${state.agentLabel}-tab`,
     tab_label: "agents",
     agent_session: {
-      source: "herdr:pi",
+      source: "herdr:omp",
       agent: "pi",
       kind: "id",
       value: state.piSessionId,
@@ -1208,7 +1208,7 @@ export function agentControllerExecutor(
                 agent: state.agentLabel,
                 agent_status: state.activeRequestId ? "working" : "idle",
                 agent_session: {
-                  source: "herdr:pi",
+                  source: "herdr:omp",
                   agent: "pi",
                   kind: "id",
                   value: state.piSessionId,
@@ -1482,7 +1482,7 @@ export function delegatedLifecycleExecutor(
                     workspace_id: WORKSPACE,
                     cwd: state.cwd,
                     agent_session: {
-                      source: "herdr:pi",
+                      source: "herdr:omp",
                       agent: "pi",
                       kind: "id",
                       value: state.piSessionId,
@@ -1675,7 +1675,7 @@ export function cascadeExecutor(
             const agent = agentFromState(state);
             if (state.agentLabel === options.mismatchSessionLabel)
               agent.agent_session = {
-                source: "herdr:pi",
+                source: "herdr:omp",
                 agent: "pi",
                 kind: "id",
                 value: "22222222-2222-4222-8222-222222222222",
@@ -1700,7 +1700,7 @@ export function cascadeExecutor(
               foreground_cwd: state.cwd,
               agent_status: "unknown",
               agent_session: {
-                source: "herdr:pi",
+                source: "herdr:omp",
                 agent: "pi",
                 kind: "id",
                 value: state.piSessionId,
@@ -1725,7 +1725,7 @@ export function cascadeExecutor(
             const agent = agentFromState(state);
             if (state.agentLabel === options.mismatchSessionLabel)
               agent.agent_session = {
-                source: "herdr:pi",
+                source: "herdr:omp",
                 agent: "pi",
                 kind: "id",
                 value: "22222222-2222-4222-8222-222222222222",
@@ -1743,7 +1743,7 @@ export function cascadeExecutor(
               foreground_cwd: state.cwd,
               agent_status: "unknown",
               agent_session: {
-                source: "herdr:pi",
+                source: "herdr:omp",
                 agent: "pi",
                 kind: "id",
                 value: state.piSessionId,
@@ -1785,7 +1785,7 @@ export function cascadeExecutor(
         const agent = agentFromState(state);
         if (state.agentLabel === options.mismatchSessionLabel)
           agent.agent_session = {
-            source: "herdr:pi",
+            source: "herdr:omp",
             agent: "pi",
             kind: "id",
             value: "22222222-2222-4222-8222-222222222222",
@@ -1850,7 +1850,7 @@ export function cascadeExecutor(
                     workspace_id: state.workspaceId,
                     cwd: state.cwd,
                     agent_session: {
-                      source: "herdr:pi",
+                      source: "herdr:omp",
                       agent: "pi",
                       kind: "id",
                       value: state.piSessionId,
@@ -2114,7 +2114,7 @@ export function createStagedAssignmentFixture(
                   workspace_id: WORKSPACE,
                   cwd: "/tmp",
                   agent_session: {
-                    source: "herdr:pi",
+                    source: "herdr:omp",
                     agent: "pi",
                     kind: "id",
                     value: state.piSessionId,
@@ -2398,7 +2398,7 @@ export function startupExecutor(
                   workspace_id: WORKSPACE,
                   cwd: testCwd,
                   agent_session: {
-                    source: "herdr:pi",
+                    source: "herdr:omp",
                     agent: "pi",
                     kind: "id",
                     value: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -2425,7 +2425,7 @@ export function startupExecutor(
                 ...(session
                   ? {
                       agent_session: {
-                        source: "herdr:pi",
+                        source: "herdr:omp",
                         agent: "pi",
                         kind: "id",
                         value: session,
@@ -2459,7 +2459,7 @@ export function startupExecutor(
                   workspace_id: WORKSPACE,
                   cwd: testCwd,
                   agent_session: {
-                    source: "herdr:pi",
+                    source: "herdr:omp",
                     agent: "pi",
                     kind: "id",
                     value: sessionForGet(getCount) ?? DEFAULT_PI_SESSION_ID,
@@ -2633,7 +2633,7 @@ export function startupExecutor(
                 terminal_id: "startup-terminal",
                 cwd: testCwd,
                 agent_session: {
-                  source: "herdr:pi",
+                  source: "herdr:omp",
                   agent: "pi",
                   kind: "id",
                   value: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -2747,7 +2747,7 @@ export function startupExecutor(
         workspace_id: WORKSPACE,
         cwd: testCwd,
         agent_session: {
-          source: "herdr:pi",
+          source: "herdr:omp",
           agent: "pi",
           kind: "id",
           value: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -2788,7 +2788,7 @@ export function startupExecutor(
                 label,
                 runId || AGENT_ID,
               ),
-              herdr_kind: "pi",
+              herdr_kind: "omp",
               agent_definition: null,
               model: null,
               thinking: null,
