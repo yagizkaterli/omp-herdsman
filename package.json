@@ -1,6 +1,6 @@
 {
   "name": "omp-herdsman",
-  "version": "0.1.0-herakles.0",
+  "version": "0.19.0",
   "type": "module",
   "description": "Asynchronous OMP (oh-my-pi) subagents and agent fleet orchestration for parallel coding agents with nested delegation in herdr. Port of pi-herdsman.",
   "license": "Apache-2.0",

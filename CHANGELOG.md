@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/yagizkaterli/omp-herdsman/compare/v0.18.0...v0.19.0) (2026-10-03)
+
+
+### Features
+
+* complete omp 18.x port + Herdr agent-state integration; add Apache-2.0 NOTICE for fork attribution ([f71a7fe](https://github.com/yagizkaterli/omp-herdsman/commit/f71a7fe91e327bf21c2891506b376ce909fb68ac))
+
 ## [0.18.0](https://github.com/boadij/pi-herdsman/compare/v0.17.1...v0.18.0) (2026-09-28)
 
 
