@@ -1,0 +1,67 @@
+# Zhengwei deterministic PR review. COMMENT-only; never semantic approval.
+name: Zhengwei V2 review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: zhengwei-v2-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      # Pin scanner source to independently inspected HERAKLES main commit.
+      # NEVER checkout or execute an untrusted PR head with write permissions.
+      - name: Checkout trusted Zhengwei source
+        uses: actions/checkout@v4
+        with:
+          repository: yagizkaterli/heraklesharness
+          ref: 7914879d90f66cecbcaf9684ce346dd54d92b6ee
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify PR identity and head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          gh api "repos/$GH_REPO/pulls/$PR_NUMBER" | jq -e --arg repo "$GH_REPO" --arg expected "$EXPECTED_HEAD" '
+            .state == "open" and .base.repo.full_name == $repo and
+            .base.ref == "main" and ($expected == "" or .head.sha == $expected)
+          ' > /dev/null
+      - name: Zhengwei V2 — COMMENT only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+        run: |
+          set -euo pipefail
+          go run ./cmd/zhengwei-review -repo "$GH_REPO" -pr "$PR_NUMBER" -unit "ZHENGWEI-V2 (deterministic, no independent approval)" -decision-dir "$RUNNER_TEMP/zhengwei-decisions"
+      - name: Upload JEV evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhengwei-v2-jev-${{ github.event.pull_request.number || inputs.pr }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/zhengwei-decisions/*.jsonl
+          if-no-files-found: warn
