@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, sep } from "node:path";
-import test from "node:test";
+import { test } from "node:test";
 import {
   agentDefinitionDelegationEnabled,
   agentDefinitionMetadata,
@@ -28,6 +28,37 @@ import {
   writePrivatePromptSnapshots,
   type Frontmatter,
 } from "./agent-definitions.ts";
+import {
+  ompCapabilitiesFallback,
+  setSharedCapabilitiesForTests,
+} from "./omp-capabilities.ts";
+import { herdsmanTempRoot } from "./storage.ts";
+
+// Pin fallback caps so launch-arg tests do not depend on live `omp --help`.
+// User-agent isolation uses PI_CODING_AGENT_DIR via withPiAgentDir — real
+// getAgentDir already honors that env, so mock.module is unnecessary here.
+setSharedCapabilitiesForTests(ompCapabilitiesFallback());
+
+/**
+ * Overlay path for non-full context inherit.
+ * mapLaunchArgs always disables both context-file extensions when either side
+ * is withheld, then re-appends wanted paths. The on-disk id still encodes the
+ * logical inherit pair for debugging.
+ */
+function contextOverlayArgs(
+  inheritProject = false,
+  inheritGlobal = false,
+): string[] {
+  if (inheritProject && inheritGlobal) return [];
+  return [
+    "--config",
+    join(
+      herdsmanTempRoot(),
+      "overlays",
+      `ctx-p${inheritProject ? 1 : 0}-u${inheritGlobal ? 1 : 0}.yml`,
+    ),
+  ];
+}
 
 function withPiAgentDir<T>(agentDir: string, callback: () => T): T {
   const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
@@ -385,9 +416,11 @@ test("rejects malformed capability fields", () => {
 test("selects global and project context independently in native order", () => {
   const root = mkdtempSync(join(tmpdir(), "omp-herdsman-context-"));
   const agentDir = join(root, "custom-agent-dir");
+  const overlayDir = join(root, "overlays");
   const project = join(root, "project");
   const cwd = join(project, "nested");
   mkdirSync(agentDir);
+  mkdirSync(overlayDir);
   mkdirSync(cwd, { recursive: true });
   const global = join(agentDir, "AGENTS.md");
   const outer = join(project, "AGENTS.md");
@@ -396,62 +429,70 @@ test("selects global and project context independently in native order", () => {
   writeFileSync(outer, "Outer");
   writeFileSync(inner, "Inner");
 
-  const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
-  process.env.PI_CODING_AGENT_DIR = agentDir;
-  try {
-    const launch = (
-      name: string,
-      frontmatter: Record<string, string | boolean>,
-    ) =>
-      agentLaunchArgs(
-        { name, path: "/agent.md", frontmatter, body: "Prompt" },
-        { bodyPromptPath: "/prompt", cwd },
-      );
-    const noContext = ["--no-context-files"];
-    const append = (path: string) => ["--append-system-prompt", path];
-    const noSkills = ["--no-skills"];
+  const launch = (
+    name: string,
+    frontmatter: Record<string, string | boolean>,
+  ) =>
+    agentLaunchArgs(
+      { name, path: "/agent.md", frontmatter, body: "Prompt" },
+      { bodyPromptPath: "/prompt", cwd, agentDir, overlayDir },
+    );
+  // Partial inherit always disables both context-file extensions, then
+  // re-appends wanted paths. Overlay id still encodes the logical pair.
+  const overlayFor = (inheritProject: boolean, inheritGlobal: boolean) => {
+    if (inheritProject && inheritGlobal) return [] as string[];
+    return [
+      "--config",
+      join(
+        overlayDir,
+        `ctx-p${inheritProject ? 1 : 0}-u${inheritGlobal ? 1 : 0}.yml`,
+      ),
+    ];
+  };
+  const noContextBoth = overlayFor(false, false);
+  const noContextUserOnly = overlayFor(true, false);
+  const noContextProjectOnly = overlayFor(false, true);
+  const append = (path: string) => ["--append-system-prompt", path];
+  const noSkills = ["--no-skills"];
 
-    assert.deepEqual(launch("agent", {}), [
-      "--system-prompt",
+  assert.deepEqual(launch("agent", {}), [
+    "--system-prompt",
+    "/prompt",
+    ...noContextBoth,
+    ...noSkills,
+  ]);
+  assert.deepEqual(launch("delegate", {}), [
+    "--append-system-prompt",
+    "/prompt",
+    ...noSkills,
+  ]);
+  for (const systemPromptMode of ["replace", "append"] as const) {
+    const prompt = [
+      systemPromptMode === "replace"
+        ? "--system-prompt"
+        : "--append-system-prompt",
       "/prompt",
-      ...noContext,
-      ...noSkills,
-    ]);
-    assert.deepEqual(launch("delegate", {}), [
-      "--append-system-prompt",
-      "/prompt",
-      ...noSkills,
-    ]);
-    for (const systemPromptMode of ["replace", "append"] as const) {
-      const prompt = [
-        systemPromptMode === "replace"
-          ? "--system-prompt"
-          : "--append-system-prompt",
-        "/prompt",
-      ];
-      for (const [frontmatter, contexts] of [
-        [{ inheritProjectContext: true, inheritGlobalContext: true }, []],
-        [
-          { inheritProjectContext: true, inheritGlobalContext: false },
-          [...noContext, ...append(outer), ...append(inner)],
-        ],
-        [
-          { inheritProjectContext: false, inheritGlobalContext: true },
-          [...noContext, ...append(global)],
-        ],
-        [
-          { inheritProjectContext: false, inheritGlobalContext: false },
-          noContext,
-        ],
-      ] as const)
-        assert.deepEqual(
-          launch("agent", { ...frontmatter, systemPromptMode }),
-          [...prompt, ...contexts, ...noSkills],
-        );
-    }
-  } finally {
-    if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
-    else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
+    ];
+    for (const [frontmatter, contexts] of [
+      [{ inheritProjectContext: true, inheritGlobalContext: true }, []],
+      [
+        { inheritProjectContext: true, inheritGlobalContext: false },
+        // cwd-up order: nested then parent project AGENTS.md
+        [...noContextUserOnly, ...append(inner), ...append(outer)],
+      ],
+      [
+        { inheritProjectContext: false, inheritGlobalContext: true },
+        [...noContextProjectOnly, ...append(global)],
+      ],
+      [
+        { inheritProjectContext: false, inheritGlobalContext: false },
+        noContextBoth,
+      ],
+    ] as const)
+      assert.deepEqual(
+        launch("agent", { ...frontmatter, systemPromptMode }),
+        [...prompt, ...contexts, ...noSkills],
+      );
   }
 });
 
@@ -568,27 +609,22 @@ test("bundled definitions carry portable capabilities and role contracts", () =>
 test("enforces read-only managed launch policies and reviewer leaf projection", () => {
   const root = mkdtempSync(join(tmpdir(), "omp-herdsman-audit-policy-"));
   const expected = new Map([
-    ["scout", ["read", "ls", "find", "grep", "ask_owner"]],
+    [
+      "scout",
+      ["read", "glob", "find", "grep"],
+    ],
     [
       "researcher",
-      [
-        "read",
-        "ls",
-        "find",
-        "grep",
-        "web_search",
-        "fetch_content",
-        "get_search_content",
-        "source_check",
-        "ask_owner",
-      ],
+      // ls→glob alias; extension-only web helpers drop from CLI --tools
+      ["read", "glob", "find", "grep", "web_search"],
     ],
     [
       "reviewer",
-      ["read", "ls", "find", "grep", ...AGENT_COORDINATION_TOOLS, "ask_owner"],
+      // coordination/ask_owner stay extension-registered, off CLI --tools
+      ["read", "glob", "find", "grep"],
     ],
   ]);
-  const forbidden = ["bash", "powershell", "edit", "write"];
+  const forbidden = ["bash", "powershell", "edit", "write", "ask_owner"];
 
   withPiAgentDir(root, () => {
     for (const [name, tools] of expected) {
@@ -623,10 +659,9 @@ test("enforces read-only managed launch policies and reviewer leaf projection", 
     const toolsIndex = args.indexOf("--tools");
     assert.deepEqual(args[toolsIndex + 1].split(","), [
       "read",
-      "ls",
+      "glob",
       "find",
       "grep",
-      "ask_owner",
     ]);
     assert.equal(
       args.flatMap((arg) => arg.split(",")).includes("agent"),
@@ -774,12 +809,12 @@ test("project discovery tolerates a missing directory and rejects a file", () =>
   });
 });
 
-test("project approval is emitted only when requested", () => {
+test("project approval flag is never emitted on omp 18.8.6", () => {
   const agent = { name: "test", path: "test", frontmatter: {}, body: "" };
-  assert.deepEqual(agentLaunchArgs(agent, {}).includes("--approve"), false);
-  assert.deepEqual(
+  assert.equal(agentLaunchArgs(agent, {}).includes("--approve"), false);
+  assert.equal(
     agentLaunchArgs(agent, { approveProject: true }).includes("--approve"),
-    true,
+    false,
   );
 });
 
@@ -1054,6 +1089,7 @@ test("transports complex prompts through a private temporary file", () => {
     assert.deepEqual(launch, [
       "--append-system-prompt",
       promptPath,
+      // name "delegate" defaults inheritProject+Global true → no overlay
       "--no-skills",
     ]);
   } finally {
@@ -1075,7 +1111,7 @@ test("writes ordered private prompt snapshots with private permissions", () => {
   }
 });
 
-test("builds exact Pi capability launch arguments", () => {
+test("builds exact omp 18.8.6 capability launch arguments", () => {
   const agent = {
     name: "delegate",
     path: "/agents/delegate.md",
@@ -1106,13 +1142,8 @@ test("builds exact Pi capability launch arguments", () => {
     promptPath,
     "--no-tools",
     "--tools",
-    "read, grep ",
-    "--exclude-tools",
-    "bash,write",
-    "--skill",
-    "./skills/local.md",
-    "--skill",
-    "/skills/shared.md",
+    "read,grep",
+    "--skills=./skills/local.md,/skills/shared.md",
     "--no-extensions",
     "--extension",
     "./extensions/local.ts",
@@ -1159,7 +1190,7 @@ test("resolves model and thinking fallbacks independently at launch", () => {
         ...options,
       },
     );
-  const suffix = ["--no-context-files", "--no-skills"];
+  const suffix = [...contextOverlayArgs(false, false), "--no-skills"];
   for (const [frontmatter, settings] of [
     [{}, ["--model", "inherited/model", "--thinking", "high"]],
     [
@@ -1175,7 +1206,7 @@ test("resolves model and thinking fallbacks independently at launch", () => {
       { name: "agent", path: "/agent.md", frontmatter: {}, body: "" },
       {},
     ),
-    ["--no-context-files", "--no-skills"],
+    [...contextOverlayArgs(false, false), "--no-skills"],
   );
 });
 
@@ -1213,7 +1244,7 @@ test("appends the shared prompt after context additions", () => {
     [
       "--system-prompt",
       "/body",
-      "--no-context-files",
+      ...contextOverlayArgs(false, false),
       "--append-system-prompt",
       "/shared",
       "--no-skills",
@@ -1254,20 +1285,12 @@ test("bundled generalist definition retains its declared tool policy", () => {
   });
   const tools = args.indexOf("--tools");
   assert.notEqual(tools, -1);
-  assert.equal(
-    args[tools + 1],
-    [
-      "read",
-      "bash",
-      "edit",
-      "write",
-      ...AGENT_COORDINATION_TOOLS,
-      "ask_owner",
-    ].join(","),
-  );
+  // Extension-only role tools stay off --tools (omp rejects unregistered names).
+  assert.equal(args[tools + 1], "read,bash,edit,write");
+  assert.equal(args.includes("ask_owner"), false);
 });
 
-test("managed launch policy always includes ask_owner", () => {
+test("managed launch policy never puts extension-only tools on --tools", () => {
   const launch = (frontmatter: Record<string, unknown>) =>
     agentLaunchArgs(
       { name: "agent", path: "/agent.md", frontmatter, body: "" },
@@ -1278,30 +1301,28 @@ test("managed launch policy always includes ask_owner", () => {
       },
     );
   const cases = [
-    [{ tools: ["read", " ask_owner", "read"] }, ["--tools", "read,ask_owner"]],
-    [{ noTools: true }, ["--no-tools", "--tools", "ask_owner"]],
-    [
-      { noTools: true, tools: ["read"] },
-      ["--no-tools", "--tools", "read,ask_owner"],
-    ],
-    [{ tools: [] }, ["--no-tools", "--tools", "ask_owner"]],
-    [
-      { noBuiltinTools: true, excludeTools: ["write", "ask_owner"] },
-      ["--no-builtin-tools", "--exclude-tools", "write"],
-    ],
+    [{ tools: ["read", " ask_owner", "read"] }, ["--tools", "read"]],
+    [{ noTools: true }, ["--no-tools"]],
+    [{ noTools: true, tools: ["read"] }, ["--no-tools", "--tools", "read"]],
+    [{ tools: [] }, ["--no-tools"]],
+    [{ noBuiltinTools: true, excludeTools: ["write", "ask_owner"] }, ["--no-tools"]],
     [{}, []],
   ] as const;
   for (const [frontmatter, expected] of cases) {
     const args = launch(frontmatter);
     if (expected.length) {
       const start = args.indexOf(expected[0]);
-      assert.notEqual(start, -1);
+      assert.notEqual(start, -1, JSON.stringify({ frontmatter, args }));
       assert.deepEqual(args.slice(start, start + expected.length), expected);
+    } else {
+      assert.equal(args.includes("--tools"), false);
+      assert.equal(args.includes("--no-tools"), false);
     }
+    // ask_owner is extension-registered later; never a CLI --tools token.
     assert.equal(
       args.flatMap((arg) => arg.split(",")).filter((arg) => arg === "ask_owner")
         .length,
-      expected.some((arg) => arg.split(",").includes("ask_owner")) ? 1 : 0,
+      0,
     );
   }
   const root = mkdtempSync(join(tmpdir(), "omp-herdsman-agent-standalone-"));
@@ -1318,7 +1339,7 @@ test("managed launch policy always includes ask_owner", () => {
     })
       .flatMap((arg) => arg.split(","))
       .filter((arg) => arg === "ask_owner").length,
-    1,
+    0,
   );
 });
 
@@ -1328,9 +1349,12 @@ test("keeps omitted tools default and closes an explicit empty allowlist", () =>
       { name: "agent", path: "/agent.md", frontmatter, body: "" },
       { bodyPromptPath: "/prompt" },
     );
-  assert.deepEqual(launch({}), ["--no-context-files", "--no-skills"]);
+  assert.deepEqual(launch({}), [
+    ...contextOverlayArgs(false, false),
+    "--no-skills",
+  ]);
   assert.deepEqual(launch({ tools: [] }), [
-    "--no-context-files",
+    ...contextOverlayArgs(false, false),
     "--no-tools",
     "--no-skills",
   ]);
@@ -1342,22 +1366,27 @@ test("applies explicit noSkills before inheritSkills defaults", () => {
       { name: "agent", path: "/agent.md", frontmatter, body: "" },
       { bodyPromptPath: "/prompt" },
     );
-  assert.deepEqual(launch({}), ["--no-context-files", "--no-skills"]);
-  assert.deepEqual(launch({ inheritSkills: true }), ["--no-context-files"]);
+  assert.deepEqual(launch({}), [
+    ...contextOverlayArgs(false, false),
+    "--no-skills",
+  ]);
+  assert.deepEqual(launch({ inheritSkills: true }), [
+    ...contextOverlayArgs(false, false),
+  ]);
   assert.deepEqual(launch({ inheritSkills: "true" }), [
-    "--no-context-files",
+    ...contextOverlayArgs(false, false),
     "--no-skills",
   ]);
   assert.deepEqual(launch({ inheritSkills: true, noSkills: true }), [
-    "--no-context-files",
+    ...contextOverlayArgs(false, false),
     "--no-skills",
   ]);
   assert.deepEqual(launch({ inheritSkills: false, noSkills: false }), [
-    "--no-context-files",
+    ...contextOverlayArgs(false, false),
   ]);
 });
 
-test("passes native capability combinations through to Pi", () => {
+test("passes native capability combinations through to omp", () => {
   assert.deepEqual(
     agentLaunchArgs(
       {
@@ -1378,10 +1407,8 @@ test("passes native capability combinations through to Pi", () => {
     ),
     [
       "--no-tools",
-      "--no-builtin-tools",
       "--no-skills",
-      "--skill",
-      "explicit-skill",
+      "--skills=explicit-skill",
       "--no-extensions",
       "--extension",
       "explicit-extension",
@@ -1586,19 +1613,19 @@ test("keeps ordinary tool metadata separate from managed role tools", () => {
       { managedAgent: true },
     );
   const roleTools = [...AGENT_COORDINATION_TOOLS, "ask_owner"];
-  const leafTools = ["ask_owner"];
   const toolArgs = (frontmatter: Frontmatter) => {
     const args = make(frontmatter);
     const index = args.indexOf("--tools");
     return index < 0 ? [] : args.slice(index, index + 2);
   };
+  // Extension-only role tools never appear on omp --tools.
   assert.deepEqual(toolArgs({ agents: ["child"], tools: ["read"] }), [
     "--tools",
-    ["read", ...roleTools].join(","),
+    "read",
   ]);
   assert.deepEqual(
     toolArgs({ agents: ["child"], noTools: true, tools: ["read"] }),
-    ["--tools", ["read", ...leafTools].join(",")],
+    ["--tools", "read"],
   );
   assert.equal(
     make({ agents: ["child"], noTools: true, tools: ["read"] }).includes(
@@ -1610,41 +1637,23 @@ test("keeps ordinary tool metadata separate from managed role tools", () => {
   const exclusions = make({
     agents: ["child"],
     tools: ["read"],
-    excludeTools: [...AGENT_COORDINATION_TOOLS, "ask_owner", "read"],
+    excludeTools: [...roleTools, "read"],
   });
-  const toolsIndex = exclusions.indexOf("--tools");
-  assert.notEqual(toolsIndex, -1);
-  assert.equal(exclusions[toolsIndex + 1], ["read", ...roleTools].join(","));
-  const exclusionsIndex = exclusions.indexOf("--exclude-tools");
-  assert.notEqual(exclusionsIndex, -1);
-  assert.deepEqual(exclusions.slice(exclusionsIndex, exclusionsIndex + 2), [
-    "--exclude-tools",
-    "read",
-  ]);
-  assert.deepEqual(toolArgs({ agents: ["child"], noTools: true }), [
-    "--tools",
-    leafTools.join(","),
-  ]);
+  // excludeTools has no omp CLI flag; excluded ordinary tools simply leave --tools.
+  assert.equal(exclusions.includes("--exclude-tools"), false);
+  assert.equal(exclusions.includes("--tools"), false);
+  assert.deepEqual(toolArgs({ agents: ["child"], noTools: true }), []);
   assert.equal(
     make({ agents: ["child"], noTools: true }).includes("--no-tools"),
     true,
   );
-  assert.deepEqual(toolArgs({ agents: ["child"], tools: [] }), [
-    "--tools",
-    leafTools.join(","),
-  ]);
+  assert.deepEqual(toolArgs({ agents: ["child"], tools: [] }), []);
   assert.equal(
     make({ agents: ["child"], tools: [] }).includes("--no-tools"),
     true,
   );
-  assert.deepEqual(toolArgs({ agents: ["child"], tools: ["agent"] }), [
-    "--tools",
-    roleTools.join(","),
-  ]);
-  assert.equal(
-    toolArgs({ agents: ["child"], tools: ["agent"] })[1].includes("agent,"),
-    false,
-  );
+  assert.deepEqual(toolArgs({ agents: ["child"], tools: ["agent"] }), []);
+  assert.equal(make({ agents: ["child"], tools: ["agent"] }).includes("--tools"), false);
 });
 
 test("projects parent-launched definitions as exact leaf capabilities", () => {
@@ -1672,9 +1681,9 @@ test("projects parent-launched definitions as exact leaf capabilities", () => {
   });
   assert.deepEqual(
     agentLaunchArgs(leaf, { managedAgent: true }).filter(
-      (value) => value === "--tools" || value.includes("ask_owner"),
+      (value) => value === "--tools" || value === "read,bash" || value === "read,bash,ask_owner",
     ),
-    ["--tools", "read,bash,ask_owner"],
+    ["--tools", "read,bash"],
   );
   const empty = projectAgentDefinition(
     {
@@ -1703,7 +1712,7 @@ test("projects parent-launched definitions as exact leaf capabilities", () => {
       (value) =>
         value === "--no-tools" || value === "--tools" || value === "ask_owner",
     ),
-    ["--no-tools", "--tools", "ask_owner"],
+    ["--no-tools"],
   );
   const denied = projectAgentDefinition(
     {
@@ -1732,12 +1741,10 @@ test("projects parent-launched definitions as exact leaf capabilities", () => {
   assert.deepEqual(
     agentLaunchArgs(delegationOnlyLeaf, { managedAgent: true }),
     [
-      "--no-context-files",
+      ...contextOverlayArgs(false, false),
       "--append-system-prompt",
       '<active_agent name="parent"/>',
       "--no-tools",
-      "--tools",
-      "ask_owner",
       "--no-skills",
     ],
   );

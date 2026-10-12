@@ -408,7 +408,7 @@ test("trusted same-cwd project assignment launches with native approval", async 
       true,
       JSON.stringify({ result: result.details, entries: pi.entries }),
     );
-    assert.ok(startArgs[0]?.includes("--approve"));
+    assert.equal(startArgs[0]?.includes("--approve"), false);
     const tool = pi.tools.find((candidate) => candidate.name === "agent_steer");
     const rendered = tool.renderCall(
       { agent: result.details.agent, message: "Continue." },
@@ -465,7 +465,7 @@ test("trusted same-cwd project assignment launches with native approval", async 
         true,
         JSON.stringify({ result: result.details, entries: pi.entries }),
       );
-      assert.ok(startArgs[0]?.includes("--approve"));
+      assert.equal(startArgs[0]?.includes("--approve"), false);
     } finally {
       pi.events.get("session_shutdown")?.[0]();
       resetAgentMailbox(startup.mailbox);
