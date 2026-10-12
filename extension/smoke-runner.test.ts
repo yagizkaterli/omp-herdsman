@@ -407,12 +407,14 @@ test("Chief tree probe is opt-in, last in root extension order, and validates th
     herdrStateExtension: "/isolated/herdr-agent-state.ts",
     model: "provider/model:high",
   };
-  assert.deepEqual(candidateArgs(config), [
-    "--approve",
+  const expectedBase = candidateArgs(config);
+  assert.equal(expectedBase.includes("--approve"), false);
+  assert.equal(expectedBase.includes("--no-context-files"), false);
+  assert.equal(expectedBase.includes("--no-prompt-templates"), false);
+  assert.ok(expectedBase.includes("--config"));
+  assert.deepEqual(expectedBase.slice(expectedBase.indexOf("--no-extensions")), [
     "--no-extensions",
     "--no-skills",
-    "--no-prompt-templates",
-    "--no-context-files",
     "--extension",
     config.candidateExtension,
     "--extension",

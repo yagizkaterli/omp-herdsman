@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile, spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
 import {
   access,
   lstat,
@@ -107,6 +108,23 @@ function assertNestedSocketPathFits(paths, sessionName) {
   return socketPath;
 }
 
+export function smokeContextOverlayPath(baseDir = join(homedir(), ".omp-herdsman-smoke")) {
+  const dir = join(baseDir, "overlays");
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "ctx-disabled.yml");
+  writeFileSync(
+    path,
+    [
+      "disabledExtensions:",
+      '  - "context-file:project:AGENTS.md"',
+      '  - "context-file:user:AGENTS.md"',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return path;
+}
+
 export function candidateArgs(config) {
   assert.ok(
     typeof config.candidateExtension === "string" &&
@@ -118,12 +136,12 @@ export function candidateArgs(config) {
       isAbsolute(config.herdrStateExtension),
     "Herdr state extension path must be absolute",
   );
+  // omp 18.8.6: no --approve / --no-context-files / --no-prompt-templates.
   const args = [
-    "--approve",
+    "--config",
+    smokeContextOverlayPath(),
     "--no-extensions",
     "--no-skills",
-    "--no-prompt-templates",
-    "--no-context-files",
     "--extension",
     config.candidateExtension,
     "--extension",

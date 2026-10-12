@@ -16,6 +16,11 @@ import { getAgentDir } from "@oh-my-pi/pi-coding-agent";
 import { CONFIG_DIR_NAME, parseFrontmatter as parsePiFrontmatter } from "@oh-my-pi/pi-utils";
 import { snapshotTextFiles } from "./core.ts";
 import { herdsmanTempRoot } from "./storage.ts";
+import {
+  getSharedCapabilities,
+  mapLaunchArgs,
+  type OmpCapabilities,
+} from "./omp-capabilities.ts";
 
 export const VALID_THINKING_LEVELS = [
   "off",
@@ -738,37 +743,37 @@ export type AgentLaunchOptions = {
    * model (configured, else inherited) is passed through unchanged.
    */
   modelDecision?: ChildModelDecision;
+  /** Optional capabilities override (tests). Defaults to shared detect/fallback. */
+  capabilities?: OmpCapabilities;
+  /** Directory for generated context-disable overlays (tests). */
+  overlayDir?: string;
+  /**
+   * Override getAgentDir() for context-file resolution. Needed because
+   * @oh-my-pi/pi-utils caches getAgentDir on first call and ignores later
+   * PI_CODING_AGENT_DIR changes (withPiAgentDir alone is not enough).
+   */
+  agentDir?: string;
 };
 
 export function agentLaunchArgs(
   agent: AgentDefinition,
   options: AgentLaunchOptions,
 ): string[] {
-  const {
-    bodyPromptPath,
-    sharedPromptPath,
-    cwd,
-    managedAgent,
-    approveProject,
-    inheritedModel,
-    inheritedThinking,
-  } = {
-    bodyPromptPath: options.bodyPromptPath,
-    sharedPromptPath: options.sharedPromptPath,
-    cwd: options.cwd ?? process.cwd(),
-    managedAgent: options.managedAgent ?? false,
-    approveProject: options.approveProject ?? false,
-    inheritedModel: options.inheritedModel,
-    inheritedThinking: options.inheritedThinking,
-  };
+  const bodyPromptPath = options.bodyPromptPath;
+  const sharedPromptPath = options.sharedPromptPath;
+  const cwd = options.cwd ?? process.cwd();
+  const managedAgent = options.managedAgent ?? false;
+  const inheritedModel = options.inheritedModel;
+  const inheritedThinking = options.inheritedThinking;
+  const caps = options.capabilities ?? getSharedCapabilities();
+
   const bodyPromptPathForLaunch = agent.body ? bodyPromptPath : undefined;
   const { frontmatter } = agent;
   if (agent.body && bodyPromptPathForLaunch === undefined)
     throw new Error(
       `agent ${agent.name} has a body but no bodyPromptPath was provided`,
     );
-  const args: string[] = [];
-  if (approveProject) args.push("--approve");
+
   const requestedModel = configuredModel(frontmatter) ?? inheritedModel;
   const decision =
     options.modelDecision ??
@@ -779,12 +784,8 @@ export function agentLaunchArgs(
           model: requestedModel,
           extensionDiscovery: false,
         });
-  if (decision.kind === "use") args.push("--model", decision.model);
 
   const thinking = configuredThinking(agent) ?? inheritedThinking;
-  if (thinking !== undefined) {
-    args.push("--thinking", thinking);
-  }
 
   const mode =
     frontmatter.systemPromptMode ??
@@ -793,78 +794,97 @@ export function agentLaunchArgs(
     throw new Error(
       `agent ${agent.name} has invalid systemPromptMode: ${JSON.stringify(mode)}`,
     );
-  if (bodyPromptPathForLaunch !== undefined)
-    args.push(
-      mode === "append" ? "--append-system-prompt" : "--system-prompt",
-      bodyPromptPathForLaunch,
-    );
+
   const inheritProjectContext =
     frontmatter.inheritProjectContext ?? agent.name === "delegate";
   const inheritGlobalContext =
     frontmatter.inheritGlobalContext ?? inheritProjectContext;
-  if (inheritProjectContext !== true || inheritGlobalContext !== true) {
-    args.push("--no-context-files");
-    if (inheritProjectContext === true || inheritGlobalContext === true) {
-      const agentDir = getAgentDir();
-      for (const context of loadProjectContextFiles({ cwd, agentDir })) {
-        const isGlobal = resolve(dirname(context.path)) === resolve(agentDir);
-        if (
-          (isGlobal && inheritGlobalContext === true) ||
-          (!isGlobal && inheritProjectContext === true)
-        )
-          args.push("--append-system-prompt", context.path);
-      }
+
+  const appendContextPaths: string[] = [];
+  if (
+    (inheritProjectContext !== true || inheritGlobalContext !== true) &&
+    (inheritProjectContext === true || inheritGlobalContext === true)
+  ) {
+    const agentDir = options.agentDir ?? getAgentDir();
+    for (const context of loadProjectContextFiles({ cwd, agentDir })) {
+      const isGlobal = resolve(dirname(context.path)) === resolve(agentDir);
+      if (
+        (isGlobal && inheritGlobalContext === true) ||
+        (!isGlobal && inheritProjectContext === true)
+      )
+        appendContextPaths.push(context.path);
     }
   }
-  if (sharedPromptPath) args.push("--append-system-prompt", sharedPromptPath);
-  if (managedAgent)
-    args.push("--append-system-prompt", `<active_agent name="${agent.name}"/>`);
 
   const explicitTools = frontmatter.tools !== undefined;
   const noTools =
-    frontmatter.noTools || (explicitTools && frontmatter.tools.length === 0);
-  if (noTools) args.push("--no-tools");
-  if (frontmatter.noBuiltinTools) args.push("--no-builtin-tools");
+    frontmatter.noTools === true ||
+    (explicitTools && frontmatter.tools.length === 0);
+
+  const extensionOnlyTools = managedAgent
+    ? [
+        "ask_owner",
+        ...(agentDefinitionDelegationEnabled(agent)
+          ? AGENT_COORDINATION_TOOLS
+          : []),
+      ]
+    : [];
+
+  let requiredTools: string[] | undefined;
+  let tools: string[] | undefined;
+  let excludeTools: string[] | undefined;
+
   if (managedAgent) {
+    requiredTools = extensionOnlyTools;
     if (noTools || explicitTools) {
-      const requiredTools = agentDefinitionDelegationEnabled(agent)
-        ? [...AGENT_COORDINATION_TOOLS, "ask_owner"]
-        : ["ask_owner"];
-      const configuredTools = normalizedToolNames(frontmatter.tools).filter(
-        (tool) => tool !== "agent" && !requiredTools.includes(tool),
+      tools = normalizedToolNames(frontmatter.tools).filter(
+        (tool) => tool !== "agent" && !extensionOnlyTools.includes(tool),
       );
-      const tools = [...new Set([...configuredTools, ...requiredTools])];
-      args.push("--tools", tools.join(","));
+      if (noTools && !explicitTools) tools = [];
+      if (explicitTools && frontmatter.tools.length === 0) tools = [];
     }
-    const requiredTools = new Set([
-      "ask_owner",
-      ...(agentDefinitionDelegationEnabled(agent)
-        ? AGENT_COORDINATION_TOOLS
-        : []),
-    ]);
-    const excluded = normalizedToolNames(frontmatter.excludeTools)
-      .filter((tool) => !requiredTools.has(tool))
-      .filter((tool, index, all) => all.indexOf(tool) === index);
-    if (excluded.length) args.push("--exclude-tools", excluded.join(","));
+    excludeTools = normalizedToolNames(frontmatter.excludeTools).filter(
+      (tool) => !extensionOnlyTools.includes(tool),
+    );
   } else {
-    if (frontmatter.tools?.length)
-      args.push("--tools", frontmatter.tools.join(","));
+    if (frontmatter.tools?.length) tools = [...frontmatter.tools];
+    else if (explicitTools) tools = [];
     if (frontmatter.excludeTools?.length)
-      args.push("--exclude-tools", frontmatter.excludeTools.join(","));
+      excludeTools = [...frontmatter.excludeTools];
   }
 
   const noSkills = frontmatter.noSkills ?? frontmatter.inheritSkills !== true;
-  if (noSkills) args.push("--no-skills");
-  for (const skill of frontmatter.skills ?? []) args.push("--skill", skill);
 
-  // A model whose provider comes from an extension cannot resolve inside a
-  // child denied extension discovery, so the model's needs outrank the
-  // definition's preference to stay lean.
+  // Model from an extension outranks a lean noExtensions preference.
   const extensionDiscovery =
-    decision.kind === "use" && decision.extensionDiscovery;
-  if (frontmatter.noExtensions && !extensionDiscovery)
-    args.push("--no-extensions");
-  for (const extension of frontmatter.extensions ?? [])
-    args.push("--extension", extension);
-  return args;
+    decision.kind === "use" && decision.extensionDiscovery === true;
+
+  return mapLaunchArgs(
+    {
+      approveProject: options.approveProject ?? false,
+      model: decision.kind === "use" ? decision.model : undefined,
+      thinking,
+      systemPromptMode: mode,
+      bodyPromptPath: bodyPromptPathForLaunch,
+      sharedPromptPath,
+      managedAgentName: managedAgent ? agent.name : undefined,
+      context: {
+        inheritProjectContext: inheritProjectContext === true,
+        inheritGlobalContext: inheritGlobalContext === true,
+      },
+      appendContextPaths,
+      noTools,
+      noBuiltinTools: frontmatter.noBuiltinTools === true,
+      tools,
+      excludeTools,
+      requiredTools,
+      extensionOnlyTools,
+      noSkills: noSkills === true,
+      skills: frontmatter.skills,
+      noExtensions: frontmatter.noExtensions === true && !extensionDiscovery,
+      extensions: frontmatter.extensions,
+      overlayDir: options.overlayDir ?? join(herdsmanTempRoot(), "overlays"),
+    },
+    caps,
+  );
 }

@@ -44,12 +44,12 @@ configuration, and Pi session storage. It launches the current worktree's
 development Agent remains outside that candidate session and owns observation
 and cleanup. The harness removes only resources it created.
 
-The candidate Pi uses `--approve` for this one invocation, trusting
-project-local files so project Agent definitions can be discovered. This does
-not change the user's project trust setting. Pi's normal extension, skill,
-prompt-template, and context-file discovery is disabled; the Pi Agent directory,
-session directory, and Herdr XDG configuration/state directories remain isolated.
-`chief-tree` additionally loads a disposable, root-only Pi probe extension;
+The candidate omp session trusts the project by default (omp 18.8.6 has no
+`--approve`). Isolation uses `--config` overlay `disabledExtensions` for
+context files plus `--no-extensions` / `--no-skills`, then re-adds the candidate
+and Herdr state extensions explicitly. The Pi Agent directory, session
+directory, and Herdr XDG configuration/state directories remain isolated.
+`chief-tree` additionally loads a disposable, root-only probe extension;
 managed descendants do not load the probe.
 
 The available scenarios are `core` (nested delegation and candidate-extension
